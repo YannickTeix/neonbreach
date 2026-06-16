@@ -1,0 +1,28 @@
+<div id="screen-lobby" class="screen active">
+  <div class="scanlines"></div>
+  <div class="lobby-content">
+    <div class="lobby-header">
+      <h2 class="lobby-title">SALLE D'ATTENTE</h2>
+      <div class="lobby-code-box">
+        <span class="lobby-code-label">CODE</span>
+        <span class="lobby-code-val">{{ state.lobby()?.id ?? '----' }}</span>
+        <button class="btn-icon-small" title="Copier le code" (click)="copyCode()">⎘</button>
+      </div>
+    </div>
+
+    <div class="lobby-players-grid">
+      <app-lobby-player-slot
+        *ngFor="let player of slots()"
+        [player]="player"
+        [hostId]="state.lobby()?.host ?? ''"
+        [myPlayerId]="state.myPlayerId()">
+      </app-lobby-player-slot>
+    </div>
+
+    <div class="lobby-footer">
+      <div class="lobby-hint">{{ hint() }}</div>
+      <button class="btn-primary" *ngIf="state.isHost()" [disabled]="playerCount() < 2" (click)="startGame()">▶ DÉMARRER</button>
+      <button class="btn-ghost" (click)="leave()">← Quitter</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,30 @@
+<div class="server-scene">
+  <div class="server-card"
+       [class.dead]="isDead()"
+       [class.attacking]="animClass() === 'attacking'"
+       [class.defending]="animClass() === 'defending'"
+       [attr.data-server]="server.name"
+       [attr.data-health-class]="healthClass()">
+    <div class="server-leds">
+      <div class="led"></div>
+      <div class="led"></div>
+      <div class="led"></div>
+    </div>
+    <div class="server-drives">
+      <div class="server-drive"></div>
+      <div class="server-drive"></div>
+      <div class="server-drive"></div>
+    </div>
+    <div class="server-name-tag">{{ server.name }}</div>
+    <div class="server-health-wrap">
+      <div class="server-health-bar-bg">
+        <div class="server-health-bar" [style.width.%]="server.health" [style.background]="healthColor()"></div>
+      </div>
+      <div class="server-health-text">{{ server.health }}%</div>
+    </div>
+
+    <div class="float-popup" *ngIf="popupText()" [class.damage]="animClass() === 'attacking'" [class.heal]="animClass() === 'defending'">
+      {{ popupText() }}
+    </div>
+  </div>
+</div>

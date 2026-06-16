@@ -1,0 +1,4 @@
+<div class="section-label">⬡ MES SERVEURS</div>
+<div class="my-servers-grid">
+  <app-server-card *ngFor="let server of state.myPlayer()?.servers ?? []" [server]="server"></app-server-card>
+</div>

@@ -1,0 +1,26 @@
+<div id="screen-game" class="screen active" style="display:grid">
+
+  <header class="game-header">
+    <div class="game-header-left">
+      <span class="game-player-badge">{{ (state.myPlayer()?.name ?? '').toUpperCase() }}</span>
+    </div>
+    <div class="game-title-center">SERVER WARS</div>
+    <div class="game-header-right">
+      <span class="game-status-badge" [style.background]="statusColor()">{{ statusLabel() }}</span>
+    </div>
+  </header>
+
+  <div class="game-body">
+    <main class="game-main">
+      <app-my-servers></app-my-servers>
+      <app-event-log></app-event-log>
+    </main>
+
+    <app-sidebar></app-sidebar>
+  </div>
+
+  <app-command-bar></app-command-bar>
+
+  <app-game-over-overlay></app-game-over-overlay>
+
+</div>

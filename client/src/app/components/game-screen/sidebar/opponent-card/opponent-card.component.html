@@ -1,0 +1,12 @@
+<div class="opponent-card" [class.eliminated]="eliminated()">
+  <div class="opponent-name">
+    <span>{{ player.name }}</span>
+    <span class="opponent-tag" *ngIf="eliminated()">✕ ÉLIMINÉ</span>
+  </div>
+  <div class="mini-server" [class.dead]="s.health <= 0" *ngFor="let s of player.servers">
+    <div class="mini-server-name" [title]="s.name">{{ s.name }}</div>
+    <div class="mini-health-bg">
+      <div class="mini-health-fill" [style.width.%]="s.health" [style.background]="healthColor(s.health)"></div>
+    </div>
+  </div>
+</div>

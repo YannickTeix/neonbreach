@@ -1,0 +1,6 @@
+<aside class="game-sidebar">
+  <div class="sidebar-title">ADVERSAIRES</div>
+  <div class="other-players-list">
+    <app-opponent-card *ngFor="let player of state.opponents()" [player]="player"></app-opponent-card>
+  </div>
+</aside>

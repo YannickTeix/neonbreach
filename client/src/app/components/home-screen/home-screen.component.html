@@ -1,0 +1,36 @@
+<div id="screen-home" class="screen active">
+  <div class="scanlines"></div>
+  <div class="home-bg-grid"></div>
+  <div class="home-content">
+    <div class="logo-block">
+      <div class="logo-sub">// MULTIPLAYER CYBER DEFENSE //</div>
+      <h1 class="logo-title">NEON<span>BREACH</span></h1>
+      <div class="logo-tagline">Protégez vos serveurs. Détruisez ceux des adversaires.</div>
+    </div>
+
+    <div class="home-form">
+      <div class="input-group">
+        <label>IDENTIFIANT</label>
+        <input type="text" [(ngModel)]="playerName" placeholder="Votre nom de joueur" maxlength="20" autocomplete="off"
+               (keydown.enter)="create()">
+      </div>
+
+      <button class="btn-primary" (click)="create()">
+        <span class="btn-icon">⊕</span> Créer un lobby
+      </button>
+
+      <div class="separator"><span>OU</span></div>
+
+      <div class="join-row">
+        <div class="input-group flex-1">
+          <label>CODE LOBBY</label>
+          <input type="text" [(ngModel)]="lobbyCode" placeholder="XXXX" maxlength="6" autocomplete="off"
+                 (keydown.enter)="join()">
+        </div>
+        <button class="btn-secondary" (click)="join()">Rejoindre</button>
+      </div>
+    </div>
+
+    <div class="error-banner" [class.hidden]="!state.homeError()">{{ state.homeError() }}</div>
+  </div>
+</div>

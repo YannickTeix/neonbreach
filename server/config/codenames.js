@@ -1,0 +1,7 @@
+module.exports = [
+  'NEXUS', 'PHANTOM', 'CIPHER', 'VECTOR', 'TITAN', 'NOVA',
+  'FORGE', 'PULSE', 'ECHO', 'STORM', 'APEX', 'VORTEX',
+  'HYDRA', 'OMEGA', 'SIGMA', 'DELTA', 'AURORA', 'ZENITH',
+  'SPECTER', 'COBALT', 'RAVEN', 'INFERNO', 'ARKOS', 'HELIOS',
+  'BLAZE', 'FROST', 'SHADE', 'PRISM', 'QUASAR', 'NEBULA',
+];

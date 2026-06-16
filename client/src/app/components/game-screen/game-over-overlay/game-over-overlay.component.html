@@ -1,0 +1,9 @@
+<div class="overlay" [class.hidden]="!state.gameOverInfo()">
+  <div class="overlay-box">
+    <div class="overlay-glitch" [style.color]="titleColor()">{{ title() }}</div>
+    <p>{{ message() }}</p>
+    <div class="overlay-actions">
+      <button class="btn-primary" (click)="playAgain()">↺ Rejouer</button>
+    </div>
+  </div>
+</div>

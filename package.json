@@ -4,7 +4,9 @@
   "description": "Jeu multijoueur de défense de serveurs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "build:client": "cd client && npm run build",
+    "postinstall": "cd client && npm install"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -1,0 +1,12 @@
+<div class="lobby-player-slot" [class.occupied]="player" [class.empty]="!player">
+  <ng-container *ngIf="player; else empty">
+    <div class="slot-icon">⬡</div>
+    <div class="slot-name">{{ player.name }}</div>
+    <div class="slot-host" *ngIf="player.id === hostId">HÔTE</div>
+    <div class="slot-host" style="color:var(--cyan)" *ngIf="player.id === myPlayerId">VOUS</div>
+  </ng-container>
+  <ng-template #empty>
+    <div class="slot-icon">○</div>
+    <div class="slot-waiting">En attente...</div>
+  </ng-template>
+</div>

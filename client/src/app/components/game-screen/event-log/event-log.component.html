@@ -1,0 +1,6 @@
+<div class="section-label log-label">⬡ JOURNAL D'ACTIVITÉ</div>
+<div class="event-log" #log>
+  <div class="log-entry" [ngClass]="entry.cls" *ngFor="let entry of state.eventLog()">
+    <span class="log-time">[{{ entry.time }}]</span><span [innerHTML]="entry.msg"></span>
+  </div>
+</div>
