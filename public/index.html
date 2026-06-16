@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SERVER WARS</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════ SCREEN: HOME ═══════════════════════ -->
+  <div id="screen-home" class="screen active">
+    <div class="scanlines"></div>
+    <div class="home-bg-grid"></div>
+    <div class="home-content">
+      <div class="logo-block">
+        <div class="logo-sub">// MULTIPLAYER CYBER DEFENSE //</div>
+        <h1 class="logo-title">NEON<span>BREACH</span></h1>
+        <div class="logo-tagline">Protégez vos serveurs. Détruisez ceux des adversaires.</div>
+      </div>
+
+      <div class="home-form">
+        <div class="input-group">
+          <label>IDENTIFIANT</label>
+          <input type="text" id="player-name" placeholder="Votre nom de joueur" maxlength="20" autocomplete="off">
+        </div>
+
+        <button id="btn-create" class="btn-primary">
+          <span class="btn-icon">⊕</span> Créer un lobby
+        </button>
+
+        <div class="separator"><span>OU</span></div>
+
+        <div class="join-row">
+          <div class="input-group flex-1">
+            <label>CODE LOBBY</label>
+            <input type="text" id="lobby-code-input" placeholder="XXXX" maxlength="6" autocomplete="off">
+          </div>
+          <button id="btn-join" class="btn-secondary">Rejoindre</button>
+        </div>
+      </div>
+
+      <div id="home-error" class="error-banner hidden"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ SCREEN: LOBBY ═══════════════════════ -->
+  <div id="screen-lobby" class="screen">
+    <div class="scanlines"></div>
+    <div class="lobby-content">
+      <div class="lobby-header">
+        <h2 class="lobby-title">SALLE D'ATTENTE</h2>
+        <div class="lobby-code-box">
+          <span class="lobby-code-label">CODE</span>
+          <span id="lobby-code-display" class="lobby-code-val">----</span>
+          <button id="btn-copy" class="btn-icon-small" title="Copier le code">⎘</button>
+        </div>
+      </div>
+
+      <div class="lobby-players-grid" id="lobby-players"></div>
+
+      <div class="lobby-footer">
+        <div class="lobby-hint" id="lobby-hint">En attente de joueurs... (2-4)</div>
+        <button id="btn-start" class="btn-primary" disabled>▶ DÉMARRER</button>
+        <button id="btn-leave" class="btn-ghost">← Quitter</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ SCREEN: GAME ═══════════════════════ -->
+  <div id="screen-game" class="screen">
+
+    <header class="game-header">
+      <div class="game-header-left">
+        <span class="game-player-badge" id="game-player-badge">JOUEUR</span>
+      </div>
+      <div class="game-title-center">SERVER WARS</div>
+      <div class="game-header-right">
+        <span class="game-status-badge" id="game-status-badge">EN JEU</span>
+      </div>
+    </header>
+
+    <div class="game-body">
+
+      <!-- Main area: my servers + log -->
+      <main class="game-main">
+        <div class="section-label">⬡ MES SERVEURS</div>
+        <div id="my-servers" class="my-servers-grid"></div>
+
+        <div class="section-label log-label">⬡ JOURNAL D'ACTIVITÉ</div>
+        <div id="event-log" class="event-log">
+          <div class="log-entry log-system">Système initialisé. Bonne chance, soldat.</div>
+        </div>
+      </main>
+
+      <!-- Right sidebar: other players -->
+      <aside class="game-sidebar" id="game-sidebar">
+        <div class="sidebar-title">ADVERSAIRES</div>
+        <div id="other-players" class="other-players-list"></div>
+      </aside>
+
+    </div>
+
+    <!-- Command bar -->
+    <div class="command-bar">
+      <div id="suggestions" class="suggestions hidden"></div>
+      <div class="cooldown-indicators">
+        <div class="cooldown-item" id="cd-attack">
+          <span class="cd-label">ATTACK</span>
+          <div class="cd-bar"><div class="cd-fill" id="cd-attack-fill"></div></div>
+          <span class="cd-timer" id="cd-attack-timer">PRÊT</span>
+        </div>
+        <div class="cooldown-item" id="cd-defend">
+          <span class="cd-label">DEFEND</span>
+          <div class="cd-bar"><div class="cd-fill cd-fill-green" id="cd-defend-fill"></div></div>
+          <span class="cd-timer" id="cd-defend-timer">PRÊT</span>
+        </div>
+      </div>
+      <div class="command-input-row">
+        <span class="prompt">$</span>
+        <input type="text" id="command-input" placeholder="attack NEXUS  |  defend TITAN" autocomplete="off" spellcheck="false">
+        <button id="btn-send" class="btn-send" title="Envoyer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
+      <div id="command-feedback" class="command-feedback"></div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════ OVERLAY: GAME OVER ═══════════════════════ -->
+  <div id="overlay-gameover" class="overlay hidden">
+    <div class="overlay-box">
+      <div class="overlay-glitch" id="gameover-title">GAME OVER</div>
+      <p id="gameover-msg"></p>
+      <div class="overlay-actions">
+        <button id="btn-play-again" class="btn-primary">↺ Rejouer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
