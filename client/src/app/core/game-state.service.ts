@@ -106,7 +106,7 @@ export class GameStateService {
     this.socket.on<BlurchangeStartPayload>('blurchangeStart').subscribe(({ playerId, playerName, targetPlayerName, serverNames }) => {
       this.blurredServers.update((set) => new Set([...set, ...serverNames]));
       const who = playerId === this.myPlayerId() ? 'Vous avez' : `${escapeHtml(playerName)} a`;
-      this.addLog(`${who} brouillé les serveurs de <b>${escapeHtml(targetPlayerName)}</b> pendant 6s`, 'log-blur');
+      this.addLog(`${who} brouillé les serveurs de <b>${escapeHtml(targetPlayerName)}</b> pendant 20s`, 'log-blur');
     });
 
     this.socket.on<BlurchangeEndPayload>('blurchangeEnd').subscribe(({ targetPlayerName, serverNames }) => {
