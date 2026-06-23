@@ -2,7 +2,7 @@
   <div class="suggestions" [class.hidden]="suggestions().length === 0">
     <div class="suggestion-item" *ngFor="let s of suggestions(); let i = index" [class.active]="i === activeSuggestionIdx()"
          (mousedown)="$event.preventDefault(); pickSuggestion(s)">
-      <span class="suggestion-name">{{ s.name }}</span><span class="suggestion-hp">{{ s.hp }}% · {{ s.owner }}</span>
+      <span class="suggestion-name">{{ s.name }}</span><span class="suggestion-hp">{{ s.label }}</span>
     </div>
   </div>
 
@@ -16,6 +16,11 @@
       <span class="cd-label">DEFEND</span>
       <div class="cd-bar"><div class="cd-fill cd-fill-green" [style.width.%]="cooldownDefend().pct"></div></div>
       <span class="cd-timer" [class.active]="cooldownDefend().active">{{ cooldownDefend().label }}</span>
+    </div>
+    <div class="cooldown-item">
+      <span class="cd-label">BLUR</span>
+      <div class="cd-bar"><div class="cd-fill cd-fill-purple" [style.width.%]="cooldownBlurchange().pct"></div></div>
+      <span class="cd-timer" [class.active]="cooldownBlurchange().active">{{ cooldownBlurchange().label }}</span>
     </div>
   </div>
 
@@ -50,13 +55,17 @@
     <ul class="cmd-help-list">
       <li class="cmd-help-item">
         <div class="cmd-help-syntax"><span class="cmd-kw">attack</span>&nbsp;<span class="cmd-arg">$serverName</span></div>
-        <div class="cmd-help-desc">Attaque un serveur ennemi — inflige <span class="cmd-val">-20%</span> de vie</div>
+        <div class="cmd-help-desc">Attaque un serveur ennemi — inflige <span class="cmd-val">-20%</span> de vie · cooldown <span class="cmd-val">3s</span></div>
       </li>
       <li class="cmd-help-item">
         <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-defend">defend</span>&nbsp;<span class="cmd-arg">$serverName</span></div>
-        <div class="cmd-help-desc">Répare l'un de vos serveurs — restaure <span class="cmd-val cmd-val-defend">+15%</span> de vie</div>
+        <div class="cmd-help-desc">Répare l'un de vos serveurs — restaure <span class="cmd-val cmd-val-defend">+15%</span> de vie · cooldown <span class="cmd-val">5s</span></div>
+      </li>
+      <li class="cmd-help-item">
+        <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-blur">blurchange</span>&nbsp;<span class="cmd-arg">$playerName</span></div>
+        <div class="cmd-help-desc">Brouille tous les serveurs d'un joueur — identité illisible pour les autres pendant <span class="cmd-val cmd-val-blur">6s</span> · cooldown <span class="cmd-val">15s</span></div>
       </li>
     </ul>
-    <p class="cmd-help-tip">Appuie sur <kbd>Tab</kbd> / <kbd>↑↓</kbd> pour naviguer dans les suggestions.</p>
+    <p class="cmd-help-tip">Appuie sur <kbd>↑↓</kbd> pour naviguer dans les suggestions.</p>
   </div>
 </div>

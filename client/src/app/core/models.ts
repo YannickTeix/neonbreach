@@ -53,3 +53,15 @@ export interface GameOverInfo {
   winner: Player | null;
   draw: boolean;
 }
+
+export interface BlurchangeStartPayload {
+  playerId: string;
+  playerName: string;
+  targetPlayerName: string;
+  serverNames: string[];
+}
+
+export interface BlurchangeEndPayload {
+  targetPlayerName: string;
+  serverNames: string[];
+}

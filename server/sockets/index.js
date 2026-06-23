@@ -1,5 +1,5 @@
 const { LobbyService } = require('../services/lobbyService');
-const { checkWinCondition, parseCommand, handleAttack, handleDefend } = require('../services/gameService');
+const { checkWinCondition, parseCommand, handleAttack, handleDefend, handleBlurchange } = require('../services/gameService');
 
 function registerSocketHandlers(io) {
   const lobbyService = new LobbyService();
@@ -73,13 +73,37 @@ function registerSocketHandlers(io) {
         return;
       }
 
+      if (cmd === 'blurchange') {
+        const result = handleBlurchange(lobby, player, targetName);
+        if (result.error) {
+          socket.emit('commandError', { message: result.error, cooldown: result.cooldown });
+          return;
+        }
+        socket.to(socket.lobbyId).emit('blurchangeStart', {
+          playerId: player.id,
+          playerName: player.name,
+          targetPlayerName: result.targetPlayerName,
+          serverNames: result.serverNames,
+        });
+        socket.emit('cooldownStart', { type: 'blurchange', duration: result.cooldownDuration });
+        const lobbyId = socket.lobbyId;
+        const casterId = socket.id;
+        setTimeout(() => {
+          io.to(lobbyId).except(casterId).emit('blurchangeEnd', {
+            targetPlayerName: result.targetPlayerName,
+            serverNames: result.serverNames,
+          });
+        }, result.blurDuration);
+        return;
+      }
+
       let result;
       if (cmd === 'attack') {
         result = handleAttack(lobby, player, targetName);
       } else if (cmd === 'defend') {
         result = handleDefend(player, targetName);
       } else {
-        socket.emit('commandError', { message: `Commande inconnue: "${cmd}". Utilisez attack ou defend.` });
+        socket.emit('commandError', { message: `Commande inconnue: "${cmd}". Utilisez attack, defend ou blurchange.` });
         return;
       }
 

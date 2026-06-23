@@ -4,7 +4,7 @@
     <span class="opponent-tag" *ngIf="eliminated()">✕ ÉLIMINÉ</span>
   </div>
   <div class="mini-server" [class.dead]="s.health <= 0" *ngFor="let s of player.servers">
-    <div class="mini-server-name" [title]="s.name">{{ s.name }}</div>
+    <div class="mini-server-name" [class.glitching]="isBlurred(s.name)" [title]="isBlurred(s.name) ? '???' : s.name">{{ s.name }}</div>
     <div class="mini-health-bg">
       <div class="mini-health-fill" [style.width.%]="s.health" [style.background]="healthColor(s.health)"></div>
     </div>

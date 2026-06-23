@@ -2,6 +2,8 @@ const ATTACK_DAMAGE = 20;
 const ATTACK_COOLDOWN_MS = 3000;
 const DEFEND_HEAL = 15;
 const DEFEND_COOLDOWN_MS = 5000;
+const BLURCHANGE_COOLDOWN_MS = 40000;
+const BLURCHANGE_DURATION_MS = 15000;
 
 function checkWinCondition(lobby) {
   const alive = lobby.players.filter((p) => p.servers && p.servers.some((s) => s.health > 0));
@@ -96,4 +98,40 @@ function handleDefend(player, targetName) {
   };
 }
 
-module.exports = { checkWinCondition, parseCommand, handleAttack, handleDefend };
+function handleBlurchange(lobby, player, targetPlayerName) {
+  const now = Date.now();
+  if (!player.cooldowns.blurchange) player.cooldowns.blurchange = 0;
+
+  if (now < player.cooldowns.blurchange) {
+    const rem = ((player.cooldowns.blurchange - now) / 1000).toFixed(1);
+    return { error: `⏱ Cooldown blurchange: ${rem}s restantes`, cooldown: true };
+  }
+
+  // targetPlayerName est déjà en majuscules (parseCommand uppercases)
+  const targetPlayer = lobby.players.find(
+    (p) => p.name.toUpperCase() === targetPlayerName
+  );
+
+  if (!targetPlayer) {
+    const allNames = lobby.players.map((p) => p.name);
+    return {
+      error: `Joueur "${targetPlayerName}" introuvable. Joueurs: ${allNames.join(', ') || 'aucun'}`,
+    };
+  }
+
+  const liveServers = targetPlayer.servers.filter((s) => s.health > 0);
+  if (liveServers.length === 0) {
+    return { error: `${targetPlayer.name} n'a plus de serveurs actifs.` };
+  }
+
+  player.cooldowns.blurchange = now + BLURCHANGE_COOLDOWN_MS;
+
+  return {
+    targetPlayerName: targetPlayer.name,
+    serverNames: liveServers.map((s) => s.name),
+    cooldownDuration: BLURCHANGE_COOLDOWN_MS,
+    blurDuration: BLURCHANGE_DURATION_MS,
+  };
+}
+
+module.exports = { checkWinCondition, parseCommand, handleAttack, handleDefend, handleBlurchange };

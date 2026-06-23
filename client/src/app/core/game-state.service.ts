@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { SocketService } from './socket.service';
 import { escapeHtml, getTime } from './health.util';
-import { GameEvent, GameOverInfo, Lobby, LogEntry, Player } from './models';
+import { BlurchangeEndPayload, BlurchangeStartPayload, GameEvent, GameOverInfo, Lobby, LogEntry, Player } from './models';
 
 export type Screen = 'home' | 'lobby' | 'game';
 
@@ -10,7 +10,7 @@ interface LobbyJoinedPayload { playerId: string; lobby: Lobby; }
 interface LobbyPayload { lobby: Lobby; }
 interface PlayerLeftPayload { playerId: string; lobby: Lobby; }
 interface GameOverPayload { winner: Player | null; draw: boolean; }
-interface CooldownStartPayload { type: 'attack' | 'defend'; duration: number; }
+interface CooldownStartPayload { type: 'attack' | 'defend' | 'blurchange'; duration: number; }
 interface CommandErrorPayload { message: string; cooldown?: boolean; }
 interface ErrorPayload { message: string; }
 
@@ -27,6 +27,7 @@ export class GameStateService {
   ]);
   readonly lastGameEvent = signal<{ event: GameEvent; seq: number } | null>(null);
   readonly cooldownStart = signal<CooldownStartPayload | null>(null);
+  readonly blurredServers = signal<ReadonlySet<string>>(new Set());
 
   readonly isHost = computed(() => {
     const l = this.lobby();
@@ -100,6 +101,21 @@ export class GameStateService {
 
     this.socket.on<CooldownStartPayload>('cooldownStart').subscribe((payload) => {
       this.cooldownStart.set(payload);
+    });
+
+    this.socket.on<BlurchangeStartPayload>('blurchangeStart').subscribe(({ playerId, playerName, targetPlayerName, serverNames }) => {
+      this.blurredServers.update((set) => new Set([...set, ...serverNames]));
+      const who = playerId === this.myPlayerId() ? 'Vous avez' : `${escapeHtml(playerName)} a`;
+      this.addLog(`${who} brouillé les serveurs de <b>${escapeHtml(targetPlayerName)}</b> pendant 6s`, 'log-blur');
+    });
+
+    this.socket.on<BlurchangeEndPayload>('blurchangeEnd').subscribe(({ targetPlayerName, serverNames }) => {
+      this.blurredServers.update((set) => {
+        const next = new Set(set);
+        serverNames.forEach((n) => next.delete(n));
+        return next;
+      });
+      this.addLog(`Serveurs de <b>${escapeHtml(targetPlayerName)}</b> — identité restaurée`, 'log-system');
     });
 
     this.socket.on<CommandErrorPayload>('commandError').subscribe(({ message }) => {
