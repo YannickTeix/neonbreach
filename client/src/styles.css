@@ -706,21 +706,102 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 .command-input-row {
   display: flex; align-items: center; gap: 8px;
 }
-.prompt {
-  color: var(--neon); font-size: 16px; font-weight: bold;
+.cmd-help-btn {
   flex-shrink: 0;
+  width: 36px; height: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--cyan);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+}
+.cmd-help-btn svg { width: 20px; height: 20px; }
+.cmd-help-btn:hover {
+  border-color: var(--cyan);
+  background: rgba(0,212,255,0.08);
+  box-shadow: 0 0 10px rgba(0,212,255,0.2);
+  color: #fff;
 }
 
-#command-input {
+.command-input {
   flex: 1; font-size: 14px;
   background: var(--panel2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 9px 12px;
+  color: var(--text);
+  font-family: var(--font);
+  outline: none;
 }
-#command-input:focus {
+.command-input:focus {
   border-color: var(--cyan);
   box-shadow: 0 0 0 2px rgba(0,212,255,0.1);
+}
+
+/* ── POPUP AIDE ── */
+.cmd-help-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(4,4,15,0.70);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s;
+}
+.cmd-help-panel {
+  background: var(--panel);
+  border: 1px solid var(--cyan);
+  border-radius: 10px;
+  padding: 24px 28px 20px;
+  width: min(420px, 90vw);
+  box-shadow: 0 0 40px rgba(0,212,255,0.15), 0 0 80px rgba(0,0,0,0.6);
+}
+.cmd-help-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.cmd-help-title {
+  font-size: 11px; letter-spacing: 3px; color: var(--cyan); font-weight: bold;
+}
+.cmd-help-close {
+  background: transparent; border: none;
+  color: var(--text-dim); font-size: 16px; cursor: pointer;
+  padding: 2px 6px; border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.cmd-help-close:hover { color: var(--text-bright); background: rgba(255,255,255,0.06); }
+
+.cmd-help-list {
+  list-style: none;
+  display: flex; flex-direction: column; gap: 16px;
+  margin-bottom: 20px;
+}
+.cmd-help-item {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.cmd-help-syntax {
+  font-size: 13px; letter-spacing: 1px; margin-bottom: 6px;
+}
+.cmd-kw { color: var(--red); font-weight: bold; }
+.cmd-kw-defend { color: var(--neon); }
+.cmd-arg { color: var(--text-dim); }
+.cmd-help-desc { font-size: 11px; color: var(--text); line-height: 1.5; }
+.cmd-val { color: var(--red); font-weight: bold; }
+.cmd-val-defend { color: var(--neon); }
+
+.cmd-help-tip {
+  font-size: 10px; color: var(--text-dim); letter-spacing: 0.5px;
+  border-top: 1px solid var(--border); padding-top: 14px;
+}
+.cmd-help-tip kbd {
+  display: inline-block;
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 3px; padding: 1px 5px;
+  font-family: var(--font); font-size: 9px; color: var(--text);
 }
 
 .btn-send {

@@ -20,8 +20,16 @@
   </div>
 
   <div class="command-input-row">
-    <span class="prompt">$</span>
-    <input #input type="text" [(ngModel)]="commandText" placeholder="attack NEXUS  |  defend TITAN"
+    <button class="cmd-help-btn" title="Aide — commandes disponibles" (click)="toggleHelp()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="15" rx="2"/>
+        <line x1="2" y1="7" x2="22" y2="7"/>
+        <polyline points="5 10.5 7.5 12.5 5 14.5"/>
+        <path d="M11.5 10a2.2 2.2 0 0 1 4.3 0c0 2-2.2 2-2.2 3.8"/>
+        <circle cx="13.6" cy="15.4" r="0.65" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+    <input #input class="command-input" type="text" [(ngModel)]="commandText" placeholder="Tapez une commande"
            autocomplete="off" spellcheck="false" (input)="onInput()" (keydown)="onKeydown($event)">
     <button class="btn-send" title="Envoyer" (click)="send()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -31,4 +39,24 @@
     </button>
   </div>
   <div class="command-feedback" [class.success]="false">{{ state.commandFeedback() }}</div>
+</div>
+
+<div class="cmd-help-overlay" *ngIf="showHelp()" (click)="showHelp.set(false)">
+  <div class="cmd-help-panel" (click)="$event.stopPropagation()">
+    <div class="cmd-help-header">
+      <span class="cmd-help-title">// COMMANDES DISPONIBLES</span>
+      <button class="cmd-help-close" (click)="showHelp.set(false)" title="Fermer">✕</button>
+    </div>
+    <ul class="cmd-help-list">
+      <li class="cmd-help-item">
+        <div class="cmd-help-syntax"><span class="cmd-kw">attack</span>&nbsp;<span class="cmd-arg">$serverName</span></div>
+        <div class="cmd-help-desc">Attaque un serveur ennemi — inflige <span class="cmd-val">-20%</span> de vie</div>
+      </li>
+      <li class="cmd-help-item">
+        <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-defend">defend</span>&nbsp;<span class="cmd-arg">$serverName</span></div>
+        <div class="cmd-help-desc">Répare l'un de vos serveurs — restaure <span class="cmd-val cmd-val-defend">+15%</span> de vie</div>
+      </li>
+    </ul>
+    <p class="cmd-help-tip">Appuie sur <kbd>Tab</kbd> / <kbd>↑↓</kbd> pour naviguer dans les suggestions.</p>
+  </div>
 </div>

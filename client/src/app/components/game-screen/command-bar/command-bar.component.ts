@@ -28,6 +28,7 @@ export class CommandBarComponent implements OnDestroy {
   @ViewChild('input') inputRef!: ElementRef<HTMLInputElement>;
 
   commandText = '';
+  readonly showHelp = signal(false);
   readonly suggestions = signal<Suggestion[]>([]);
   readonly activeSuggestionIdx = signal(-1);
 
@@ -174,6 +175,10 @@ export class CommandBarComponent implements OnDestroy {
     if (e.key === 'Escape') {
       this.suggestions.set([]);
     }
+  }
+
+  toggleHelp(): void {
+    this.showHelp.update((v) => !v);
   }
 
   send(): void {
