@@ -304,7 +304,7 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   z-index: 10;
 }
 .game-header-left { display: flex; align-items: center; }
-.game-header-right { display: flex; align-items: center; justify-content: flex-end; }
+.game-header-right { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
 .game-title-center {
   font-size: 14px; letter-spacing: 6px;
   color: var(--text-dim); text-align: center;
@@ -326,6 +326,40 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 @keyframes statusPulse {
   0%,100% { box-shadow: 0 0 6px rgba(0,255,136,0.4); }
   50% { box-shadow: 0 0 14px rgba(0,255,136,0.8); }
+}
+
+/* ── Neofrag counter ── */
+.neofrag-counter {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(0,120,255,0.1);
+  border: 1px solid rgba(0,170,255,0.3);
+  border-radius: 4px; padding: 3px 8px;
+  animation: neofragPulse 2.5s ease-in-out infinite;
+}
+@keyframes neofragPulse {
+  0%,100% { box-shadow: 0 0 6px rgba(0,170,255,0.25); border-color: rgba(0,170,255,0.3); }
+  50% { box-shadow: 0 0 14px rgba(0,170,255,0.6); border-color: rgba(0,170,255,0.6); }
+}
+.neofrag-label {
+  font-size: 10px; letter-spacing: 1px;
+  color: rgba(0,170,255,0.6);
+  white-space: nowrap;
+}
+.neofrag-icon { width: 14px; height: 14px; flex-shrink: 0; }
+.neofrag-icon-mini { width: 10px; height: 10px; vertical-align: middle; }
+.neofrag-value {
+  font-size: 11px; letter-spacing: 1px; font-weight: bold;
+  color: #00aaff;
+  text-shadow: 0 0 8px rgba(0,170,255,0.8);
+  min-width: 22px; text-align: right;
+}
+
+/* ── Neofrag rate on server card ── */
+.server-neofrag-rate {
+  font-size: 9px; letter-spacing: 1px;
+  color: rgba(0,170,255,0.7);
+  text-align: center;
+  margin-top: 4px;
 }
 
 /* ── Game Body (main + sidebar) ── */

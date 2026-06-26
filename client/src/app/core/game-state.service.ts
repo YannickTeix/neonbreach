@@ -28,6 +28,7 @@ export class GameStateService {
   readonly lastGameEvent = signal<{ event: GameEvent; seq: number } | null>(null);
   readonly cooldownStart = signal<CooldownStartPayload | null>(null);
   readonly blurredServers = signal<ReadonlySet<string>>(new Set());
+  readonly myNeofrags = signal<number>(0);
 
   readonly isHost = computed(() => {
     const l = this.lobby();
@@ -74,6 +75,7 @@ export class GameStateService {
 
     this.socket.on<LobbyPayload>('gameStarted').subscribe(({ lobby }) => {
       this.lobby.set(lobby);
+      this.myNeofrags.set(0);
       this.screen.set('game');
       this.addLog('Partie commencée ! Bonne chance.', 'log-system');
     });
@@ -116,6 +118,10 @@ export class GameStateService {
         return next;
       });
       this.addLog(`Serveurs de <b>${escapeHtml(targetPlayerName)}</b> — identité restaurée`, 'log-system');
+    });
+
+    this.socket.on<{ neofrags: number }>('neofragUpdate').subscribe(({ neofrags }) => {
+      this.myNeofrags.set(neofrags);
     });
 
     this.socket.on<CommandErrorPayload>('commandError').subscribe(({ message }) => {

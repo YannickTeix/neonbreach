@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges, computed, effect, inject, signal } from '@angular/core';
 import { GameStateService } from '../../../../core/game-state.service';
 import { healthClass, healthColor } from '../../../../core/health.util';
 import { ServerInfo } from '../../../../core/models';
@@ -10,7 +10,7 @@ import { ServerInfo } from '../../../../core/models';
   imports: [CommonModule],
   templateUrl: './server-card.component.html',
 })
-export class ServerCardComponent implements OnInit, OnDestroy {
+export class ServerCardComponent implements OnChanges, OnDestroy {
   @Input({ required: true }) server!: ServerInfo;
 
   private readonly state = inject(GameStateService);
@@ -19,19 +19,9 @@ export class ServerCardComponent implements OnInit, OnDestroy {
   readonly popupText = signal<string | null>(null);
   readonly isBlurred = computed(() => this.state.blurredServers().has(this.server.name));
 
-  private lastSeq = 0;
   private prevBlurred = false;
   private popupTimeout?: ReturnType<typeof setTimeout>;
   private animTimeout?: ReturnType<typeof setTimeout>;
-
-  private readonly combatEffect = effect(() => {
-    const payload = this.state.lastGameEvent();
-    if (!payload || payload.seq === this.lastSeq) return;
-    const { event } = payload;
-    if (event.targetServerName !== this.server.name) return;
-    this.lastSeq = payload.seq;
-    this.triggerCombatAnim(event.type, event.type === 'attack' ? '-20%' : '+15%');
-  });
 
   private readonly blurEffect = effect(() => {
     const blurred = this.isBlurred();
@@ -39,7 +29,20 @@ export class ServerCardComponent implements OnInit, OnDestroy {
       this.triggerBlurAnim();
     }
     this.prevBlurred = blurred;
-  });
+  }, { allowSignalWrites: true });
+
+  ngOnChanges(changes: SimpleChanges): void {
+    const c = changes['server'];
+    if (!c || c.firstChange) return;
+    const prev: ServerInfo = c.previousValue;
+    const curr: ServerInfo = c.currentValue;
+    if (!prev || !curr || prev.health === curr.health) return;
+    if (curr.health < prev.health && prev.health > 0) {
+      this.triggerCombatAnim('attack', `-${prev.health - curr.health}%`);
+    } else if (curr.health > prev.health) {
+      this.triggerCombatAnim('defend', `+${curr.health - prev.health}%`);
+    }
+  }
 
   isDead(): boolean {
     return this.server.health <= 0;
@@ -53,15 +56,12 @@ export class ServerCardComponent implements OnInit, OnDestroy {
     return healthColor(this.server.health);
   }
 
-  ngOnInit(): void {}
-
   ngOnDestroy(): void {
     if (this.popupTimeout) clearTimeout(this.popupTimeout);
     if (this.animTimeout) clearTimeout(this.animTimeout);
   }
 
   private triggerCombatAnim(type: 'attack' | 'defend', popup: string): void {
-    if (this.isDead()) return;
     this.animClass.set(type === 'attack' ? 'attacking' : 'defending');
     this.popupText.set(popup);
     if (this.popupTimeout) clearTimeout(this.popupTimeout);

@@ -11,4 +11,8 @@ import { ServerCardComponent } from './server-card/server-card.component';
 })
 export class MyServersComponent {
   readonly state = inject(GameStateService);
+
+  trackByName(_: number, server: { name: string }): string {
+    return server.name;
+  }
 }

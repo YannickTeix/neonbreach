@@ -90,6 +90,7 @@ class LobbyService {
       name: playerName.trim().slice(0, 20),
       servers: [],
       cooldowns: { attack: 0, defend: 0 },
+      neofrags: 0,
     };
   }
 
@@ -102,7 +103,12 @@ class LobbyService {
     const totalServers = lobby.players.length * 3;
     const names = this._getUniqueServerNames(totalServers);
     lobby.players.forEach((player, i) => {
-      player.servers = names.slice(i * 3, i * 3 + 3).map((name) => ({ name, health: 100 }));
+      player.servers = names.slice(i * 3, i * 3 + 3).map((name) => ({
+        name,
+        health: 100,
+        neofragGain: 1,
+        neofragFreq: 3000,
+      }));
     });
   }
 }

@@ -1,6 +1,8 @@
 export interface ServerInfo {
   name: string;
   health: number;
+  neofragGain: number;
+  neofragFreq: number;
 }
 
 export interface Player {

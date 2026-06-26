@@ -4,10 +4,18 @@ const { checkWinCondition, parseCommand, handleAttack, handleDefend, handleBlurc
 function registerSocketHandlers(io) {
   const lobbyService = new LobbyService();
 
+  function clearNeofragIntervals(lobby) {
+    if (lobby.neofragIntervals) {
+      lobby.neofragIntervals.forEach(clearInterval);
+      lobby.neofragIntervals = [];
+    }
+  }
+
   function emitGameOver(lobbyId, lobby) {
     const winner = checkWinCondition(lobby);
     if (!winner) return;
 
+    clearNeofragIntervals(lobby);
     lobby.gameStarted = false;
     io.to(lobbyId).emit('gameOver', {
       winner: winner === 'draw' ? null : lobbyService.sanitizePlayer(winner),
@@ -56,6 +64,19 @@ function registerSocketHandlers(io) {
       }
 
       lobbyService.startGame(lobby);
+
+      lobby.neofragIntervals = [];
+      for (const player of lobby.players) {
+        for (const server of player.servers) {
+          const intervalId = setInterval(() => {
+            if (!lobby.gameStarted || server.health <= 0) return;
+            player.neofrags += server.neofragGain;
+            io.to(player.id).emit('neofragUpdate', { neofrags: player.neofrags });
+          }, server.neofragFreq);
+          lobby.neofragIntervals.push(intervalId);
+        }
+      }
+
       io.to(socket.lobbyId).emit('gameStarted', { lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
@@ -120,9 +141,15 @@ function registerSocketHandlers(io) {
     });
 
     socket.on('disconnect', () => {
-      const wasInGame = lobbyService.getLobby(socket.lobbyId)?.gameStarted;
+      const preLobby = lobbyService.getLobby(socket.lobbyId);
+      if (!preLobby) return;
+      const wasInGame = preLobby.gameStarted;
       const lobby = lobbyService.removePlayer(socket.lobbyId, socket.id);
-      if (!lobby) return;
+
+      if (!lobby) {
+        clearNeofragIntervals(preLobby);
+        return;
+      }
 
       io.to(socket.lobbyId).emit('playerLeft', {
         playerId: socket.id,
