@@ -6,23 +6,26 @@
        [class.blurchanging]="animClass() === 'blurchanging'"
        [class.glitching]="isBlurred()"
        [attr.data-server]="server.name"
-       [attr.data-health-class]="healthClass()">
+       [attr.data-integrity-class]="integrityClass()">
     <div class="server-leds">
       <div class="led"></div>
       <div class="led"></div>
       <div class="led"></div>
     </div>
     <div class="server-drives">
-      <div class="server-drive"></div>
-      <div class="server-drive"></div>
-      <div class="server-drive"></div>
+      <div class="server-drive"
+           *ngFor="let i of [0, 1, 2]"
+           [class.active-core]="i < server.processingCores">
+      </div>
     </div>
     <div class="server-name-tag" [class.glitching]="isBlurred()">{{ server.name }}</div>
-    <div class="server-health-wrap">
-      <div class="server-health-bar-bg">
-        <div class="server-health-bar" [style.width.%]="server.health" [style.background]="healthColor()"></div>
+    <div class="server-integrity-wrap">
+      <div class="server-integrity-bar-bg">
+        <div class="server-integrity-bar" [style.width.%]="server.currentIntegrity"></div>
       </div>
-      <div class="server-health-text">{{ server.health }}%</div>
+      <div class="server-integrity-row">
+        <span class="server-integrity-text" *ngIf="!isDead()">{{ server.currentIntegrity }}/{{ server.integrityMax }}</span>
+      </div>
     </div>
     <div class="server-neofrag-rate" *ngIf="!isDead()">
       +{{ server.neofragGain }}&thinsp;<svg class="neofrag-icon-mini" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">

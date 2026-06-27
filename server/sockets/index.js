@@ -74,7 +74,7 @@ function registerSocketHandlers(io) {
       for (const player of lobby.players) {
         for (const server of player.servers) {
           const intervalId = setInterval(() => {
-            if (!lobby.gameStarted || server.health <= 0) return;
+            if (!lobby.gameStarted || server.currentIntegrity <= 0) return;
             player.neofrags += server.neofragGain;
             io.to(player.id).emit('neofragUpdate', { neofrags: player.neofrags });
           }, server.neofragFreq);
@@ -90,7 +90,7 @@ function registerSocketHandlers(io) {
       if (!lobby || !lobby.gameStarted) return;
 
       const player = lobbyService.getPlayer(lobby, socket.id);
-      if (!player || !player.servers.some((s) => s.health > 0)) return;
+      if (!player || !player.servers.some((s) => s.currentIntegrity > 0)) return;
 
       const { cmd, targetName } = parseCommand(command);
 
@@ -129,7 +129,7 @@ function registerSocketHandlers(io) {
             if (!breacher || breacher.state !== 'preparing') return;
 
             const sourceServer = currentPlayer.servers.find((s) => s.name === breacher.sourceServer);
-            if (!sourceServer || sourceServer.health <= 0) {
+            if (!sourceServer || sourceServer.currentIntegrity <= 0) {
               currentPlayer.breachers = currentPlayer.breachers.filter((b) => b.id !== breachId);
               socket.emit('breachCancelled', { breachId, reason: 'Serveur source detruit.' });
               return;
@@ -227,27 +227,31 @@ function registerSocketHandlers(io) {
       io.to(socket.lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(lobby) });
       socket.emit('cooldownStart', { type: cmd, duration: result.cooldownDuration });
 
-      if (cmd === 'attack' && result.event.newHealth === 0) {
-        const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
-        if (targetPlayer && targetPlayer.breachers && targetPlayer.breachers.length > 0) {
-          const destroyed = targetPlayer.breachers.filter(
-            (b) => b.sourceServer === result.event.targetServerName
-          );
-          if (destroyed.length > 0) {
-            targetPlayer.breachers = targetPlayer.breachers.filter(
-              (b) => b.sourceServer !== result.event.targetServerName
+      if (cmd === 'attack') {
+        io.to(player.id).emit('neofragUpdate', { neofrags: result.newNeofrags });
+
+        if (result.event.newCurrentIntegrity === 0) {
+          const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
+          if (targetPlayer && targetPlayer.breachers && targetPlayer.breachers.length > 0) {
+            const destroyed = targetPlayer.breachers.filter(
+              (b) => b.sourceServer === result.event.targetServerName
             );
-            for (const b of destroyed) {
-              io.to(targetPlayer.id).emit('breachCancelled', {
-                breachId: b.id,
-                reason: `Serveur ${b.sourceServer} détruit.`,
-              });
+            if (destroyed.length > 0) {
+              targetPlayer.breachers = targetPlayer.breachers.filter(
+                (b) => b.sourceServer !== result.event.targetServerName
+              );
+              for (const b of destroyed) {
+                io.to(targetPlayer.id).emit('breachCancelled', {
+                  breachId: b.id,
+                  reason: `Serveur ${b.sourceServer} détruit.`,
+                });
+              }
             }
           }
         }
-      }
 
-      if (cmd === 'attack') emitGameOver(socket.lobbyId, lobby);
+        emitGameOver(socket.lobbyId, lobby);
+      }
     });
 
     socket.on('disconnect', () => {

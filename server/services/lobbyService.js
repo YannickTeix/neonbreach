@@ -106,9 +106,11 @@ class LobbyService {
     lobby.players.forEach((player, i) => {
       player.servers = names.slice(i * 3, i * 3 + 3).map((name) => ({
         name,
-        health: 100,
+        currentIntegrity: 100,
+        integrityMax: 100,
         neofragGain: 1,
         neofragFreq: 3000,
+        processingCores: 1,
       }));
     });
   }

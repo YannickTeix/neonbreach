@@ -118,10 +118,18 @@ export class CommandBarComponent implements OnDestroy {
     const blurred = this.state.blurredServers();
 
     if (cmd === 'attack' || cmd === 'a') {
-      for (const p of this.state.opponents()) {
-        for (const s of p.servers) {
-          if (s.health > 0 && !blurred.has(s.name) && s.name.startsWith(query)) {
-            pool.push({ name: s.name, label: `${s.health}% · ${p.name}`, type: 'attack' });
+      if (parts.length >= 3) {
+        const q = parts[2] ?? '';
+        const maxNeo = Math.min(30, this.state.myNeofrags());
+        [5, 10, 15, 20, 25, 30]
+          .filter((n) => n <= maxNeo && String(n).startsWith(q))
+          .forEach((n) => pool.push({ name: String(n), label: `${n} neofrags`, type: 'attack' }));
+      } else {
+        for (const p of this.state.opponents()) {
+          for (const s of p.servers) {
+            if (s.currentIntegrity > 0 && !blurred.has(s.name) && s.name.startsWith(query)) {
+              pool.push({ name: s.name, label: p.name, type: 'attack' });
+            }
           }
         }
       }
@@ -129,8 +137,8 @@ export class CommandBarComponent implements OnDestroy {
       const me = this.state.myPlayer();
       if (me) {
         for (const s of me.servers) {
-          if (s.health > 0 && s.name.startsWith(query)) {
-            pool.push({ name: s.name, label: `${s.health}%`, type: 'defend' });
+          if (s.currentIntegrity > 0 && s.name.startsWith(query)) {
+            pool.push({ name: s.name, label: `${s.currentIntegrity}%`, type: 'defend' });
           }
         }
       }
@@ -138,7 +146,7 @@ export class CommandBarComponent implements OnDestroy {
       const lobby = this.state.lobby();
       if (lobby) {
         for (const p of lobby.players) {
-          const liveCount = p.servers.filter((s) => s.health > 0).length;
+          const liveCount = p.servers.filter((s) => s.currentIntegrity > 0).length;
           const isSelf = p.id === this.state.myPlayerId();
           if (liveCount > 0 && p.name.toUpperCase().startsWith(query)) {
             pool.push({ name: p.name, label: `${liveCount} serveur(s)${isSelf ? ' · vous' : ''}`, type: 'blurchange' });
@@ -152,8 +160,8 @@ export class CommandBarComponent implements OnDestroy {
         const me = this.state.myPlayer();
         if (me) {
           for (const s of me.servers) {
-            if (s.health > 0 && s.name.startsWith(q)) {
-              pool.push({ name: s.name, label: `${s.health}%`, type: 'attack' });
+            if (s.currentIntegrity > 0 && s.name.startsWith(q)) {
+              pool.push({ name: s.name, label: `${s.currentIntegrity}%`, type: 'attack' });
             }
           }
         }
@@ -182,6 +190,14 @@ export class CommandBarComponent implements OnDestroy {
   pickSuggestion(s: Suggestion): void {
     const parts = this.commandText.trim().split(/\s+/);
     const cmd = parts[0]?.toLowerCase();
+
+    if ((cmd === 'attack' || cmd === 'a') && parts.length <= 2) {
+      this.commandText = `attack ${s.name} `;
+      this.updateSuggestions();
+      this.inputRef.nativeElement.focus();
+      return;
+    }
+
     if (cmd === 'breach') {
       const subCmd = parts[1]?.toLowerCase();
       if (subCmd === 'prepare') {

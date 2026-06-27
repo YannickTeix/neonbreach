@@ -1,8 +1,10 @@
 export interface ServerInfo {
   name: string;
-  health: number;
+  currentIntegrity: number;
+  integrityMax: number;
   neofragGain: number;
   neofragFreq: number;
+  processingCores: number;
 }
 
 export interface Player {
@@ -26,7 +28,9 @@ export interface AttackEvent {
   targetPlayerName: string;
   targetServerName: string;
   damage: number;
-  newHealth: number;
+  newCurrentIntegrity: number;
+  neofragsConsumed: number;
+  coresMultiplier: number;
 }
 
 export interface DefendEvent {
@@ -35,7 +39,7 @@ export interface DefendEvent {
   playerName: string;
   targetServerName: string;
   heal: number;
-  newHealth: number;
+  newCurrentIntegrity: number;
 }
 
 export type GameEvent = AttackEvent | DefendEvent;

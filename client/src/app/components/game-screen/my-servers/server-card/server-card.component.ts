@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges, computed, effect, inject, signal } from '@angular/core';
 import { GameStateService } from '../../../../core/game-state.service';
-import { healthClass, healthColor } from '../../../../core/health.util';
+import { integrityClass, integrityColor } from '../../../../core/health.util';
 import { Breacher, ServerInfo } from '../../../../core/models';
 
 @Component({
@@ -39,24 +39,24 @@ export class ServerCardComponent implements OnChanges, OnDestroy {
     if (!c || c.firstChange) return;
     const prev: ServerInfo = c.previousValue;
     const curr: ServerInfo = c.currentValue;
-    if (!prev || !curr || prev.health === curr.health) return;
-    if (curr.health < prev.health && prev.health > 0) {
-      this.triggerCombatAnim('attack', `-${prev.health - curr.health}%`);
-    } else if (curr.health > prev.health) {
-      this.triggerCombatAnim('defend', `+${curr.health - prev.health}%`);
+    if (!prev || !curr || prev.currentIntegrity === curr.currentIntegrity) return;
+    if (curr.currentIntegrity < prev.currentIntegrity && prev.currentIntegrity > 0) {
+      this.triggerCombatAnim('attack', `-${prev.currentIntegrity - curr.currentIntegrity}%`);
+    } else if (curr.currentIntegrity > prev.currentIntegrity) {
+      this.triggerCombatAnim('defend', `+${curr.currentIntegrity - prev.currentIntegrity}%`);
     }
   }
 
   isDead(): boolean {
-    return this.server.health <= 0;
+    return this.server.currentIntegrity <= 0;
   }
 
-  healthClass(): string {
-    return this.isDead() ? 'dead' : healthClass(this.server.health);
+  integrityClass(): string {
+    return this.isDead() ? 'dead' : integrityClass(this.server.currentIntegrity);
   }
 
-  healthColor(): string {
-    return healthColor(this.server.health);
+  integrityColor(): string {
+    return integrityColor(this.server.currentIntegrity);
   }
 
   ngOnDestroy(): void {

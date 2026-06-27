@@ -239,16 +239,17 @@ export class GameStateService {
     if (ev.type === 'attack') {
       const who = ev.attackerId === this.myPlayerId() ? 'Vous avez attaqué' : `${escapeHtml(ev.attackerName)} attaque`;
       const target = ev.targetPlayerId === this.myPlayerId() ? 'votre' : 'le';
+      const coresInfo = ev.coresMultiplier > 1 ? ` ×${ev.coresMultiplier} cores` : '';
       this.addLog(
-        `${who} ${target} serveur <b>${escapeHtml(ev.targetServerName)}</b> (${escapeHtml(ev.targetPlayerName)}) — -20% → ${ev.newHealth}%`,
+        `${who} ${target} serveur <b>${escapeHtml(ev.targetServerName)}</b> (${escapeHtml(ev.targetPlayerName)}) — ${ev.neofragsConsumed}⬡${coresInfo} = -${ev.damage}% → ${ev.newCurrentIntegrity}%`,
         'log-attack'
       );
-      if (ev.newHealth <= 0) {
+      if (ev.newCurrentIntegrity <= 0) {
         setTimeout(() => this.addLog(`⚠ Serveur <b>${escapeHtml(ev.targetServerName)}</b> DÉTRUIT !`, 'log-destroy'), 500);
       }
     } else {
       const who = ev.playerId === this.myPlayerId() ? 'Vous avez défendu' : `${escapeHtml(ev.playerName)} défend`;
-      this.addLog(`${who} <b>${escapeHtml(ev.targetServerName)}</b> — +15% → ${ev.newHealth}%`, 'log-defend');
+      this.addLog(`${who} <b>${escapeHtml(ev.targetServerName)}</b> — +15% → ${ev.newCurrentIntegrity}%`, 'log-defend');
     }
   }
 }

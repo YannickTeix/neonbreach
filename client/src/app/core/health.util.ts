@@ -1,12 +1,12 @@
-export function healthClass(hp: number): string {
-  if (hp > 50) return 'high';
-  if (hp > 25) return 'mid';
+export function integrityClass(val: number): string {
+  if (val > 50) return 'high';
+  if (val > 25) return 'mid';
   return 'low';
 }
 
-export function healthColor(hp: number): string {
-  if (hp > 50) return 'linear-gradient(90deg,#00cc66,#00ff88)';
-  if (hp > 25) return 'linear-gradient(90deg,#cc8800,#ffaa00)';
+export function integrityColor(val: number): string {
+  if (val > 50) return 'linear-gradient(90deg,#00cc66,#00ff88)';
+  if (val > 25) return 'linear-gradient(90deg,#cc8800,#ffaa00)';
   return 'linear-gradient(90deg,#cc0033,#ff2255)';
 }
 

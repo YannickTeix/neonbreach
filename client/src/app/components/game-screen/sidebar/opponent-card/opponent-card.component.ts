@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, computed, inject } from '@angular/core';
 import { GameStateService } from '../../../../core/game-state.service';
-import { healthColor } from '../../../../core/health.util';
+import { integrityColor } from '../../../../core/health.util';
 import { Player } from '../../../../core/models';
 
 @Component({
@@ -15,14 +15,16 @@ export class OpponentCardComponent {
 
   readonly state = inject(GameStateService);
 
-  readonly eliminated = computed(() => !this.player.servers.some((s) => s.health > 0));
+  readonly eliminated = computed(() =>
+    this.player.servers.length > 0 && !this.player.servers.some((s) => s.currentIntegrity > 0)
+  );
 
   readonly hasBreach = computed(() =>
     this.state.myBreachers().some((b) => b.state === 'connected' && b.connectedPlayerId === this.player.id)
   );
 
-  healthColor(hp: number): string {
-    return healthColor(hp);
+  integrityColor(val: number): string {
+    return integrityColor(val);
   }
 
   isBlurred(serverName: string): boolean {
