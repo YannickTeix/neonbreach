@@ -388,8 +388,9 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 
 /* ── MY SERVERS GRID ── */
 .my-servers-grid {
-  display: flex; gap: 12px;
+  display: flex; gap: 16px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* ─────────────────────────
@@ -398,12 +399,12 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 .server-scene {
   perspective: 700px;
   perspective-origin: 50% 40%;
-  flex: 1; min-width: 90px; max-width: 160px;
+  flex: 1; min-width: 140px; max-width: 220px;
 }
 
 .server-card {
   width: 100%;
-  min-height: 170px;
+  min-height: 210px;
   background: linear-gradient(160deg, #0a1220, #060e18);
   border: 1px solid var(--neon-dim);
   border-radius: 8px;
@@ -492,7 +493,7 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   position: relative; z-index: 3;
 }
 .server-drive {
-  height: 10px;
+  height: 18px;
   background: linear-gradient(90deg, #0a1a0a, #0f2010);
   border: 1px solid #1a3020;
   border-radius: 2px;
@@ -522,9 +523,9 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 5px;
-  color: rgba(0, 255, 136, 0.85);
-  letter-spacing: 0.5px;
+  font-size: 9px;
+  color: rgba(0, 255, 136, 0.9);
+  letter-spacing: 1.5px;
   white-space: nowrap;
   pointer-events: none;
   z-index: 2;
@@ -1210,6 +1211,19 @@ input[type="text"]::placeholder { color: var(--text-dim); }
     max-width: 130px; min-width: 100px;
   }
 
+  .server-card {
+    min-height: 170px;
+  }
+
+  .server-drive {
+    height: 10px;
+  }
+
+  .server-drive.active-core::before {
+    font-size: 5px;
+    letter-spacing: 0.5px;
+  }
+
   .event-log { max-height: 90px; }
 
   .lobby-players-grid { grid-template-columns: 1fr 1fr; }
@@ -1220,6 +1234,9 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 @media (max-width: 380px) {
   .my-servers-grid { gap: 8px; }
   .server-scene { min-width: 85px; max-width: 110px; }
+  .server-card { min-height: 160px; }
+  .server-drive { height: 10px; }
+  .server-drive.active-core::before { font-size: 5px; letter-spacing: 0.5px; }
   .cooldown-indicators { gap: 10px; }
   .cd-label { font-size: 8px; min-width: 36px; }
 }
