@@ -67,3 +67,37 @@ export interface BlurchangeEndPayload {
   targetPlayerName: string;
   serverNames: string[];
 }
+
+export interface Breacher {
+  id: string;
+  name: string | null;
+  sourceServer: string;
+  state: 'preparing' | 'ready' | 'connected';
+  connectedPlayerId: string | null;
+  connectedPlayerName: string | null;
+}
+
+export interface BreachPreparingPayload {
+  breachId: string;
+  sourceServer: string;
+  duration: number;
+}
+
+export interface BreachReadyPayload {
+  breachId: string;
+  sourceServer: string;
+  breacherName: string;
+}
+
+export interface BreachConnectedPayload {
+  breacherId: string;
+  breacherName: string;
+  sourceServer: string;
+  targetPlayerId: string;
+  targetPlayerName: string;
+}
+
+export interface BreachCancelledPayload {
+  breachId: string;
+  reason: string;
+}

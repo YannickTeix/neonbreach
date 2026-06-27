@@ -1,0 +1,6 @@
+module.exports = [
+  'AUGER', 'COREX', 'TAPROOT', 'GIMLET', 'PIERCE', 'LANCER',
+  'BORER', 'TORQUE', 'SPINDLE', 'HELICAL', 'CHISEL', 'GRINDER',
+  'REAMER', 'LANCET', 'CUTTER', 'VORTEX', 'ANVIL', 'COBALT',
+  'JACKBIT', 'TREPAN',
+];

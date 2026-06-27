@@ -39,6 +39,11 @@
       </svg>&thinsp;/&thinsp;{{ server.neofragFreq / 1000 }}s
     </div>
 
+    <div class="server-breach-indicator" *ngIf="!isDead() && breacherOnServer() as b">
+      <span class="breach-state-preparing" *ngIf="b.state === 'preparing'">⏳ breacher</span>
+      <span class="breach-state-ready" *ngIf="b.state !== 'preparing'">⚡ {{ b.name }}</span>
+    </div>
+
     <div class="float-popup" *ngIf="popupText()" [class.damage]="animClass() === 'attacking'" [class.heal]="animClass() === 'defending'">
       {{ popupText() }}
     </div>

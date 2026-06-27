@@ -17,6 +17,10 @@ export class OpponentCardComponent {
 
   readonly eliminated = computed(() => !this.player.servers.some((s) => s.health > 0));
 
+  readonly hasBreach = computed(() =>
+    this.state.myBreachers().some((b) => b.state === 'connected' && b.connectedPlayerId === this.player.id)
+  );
+
   healthColor(hp: number): string {
     return healthColor(hp);
   }

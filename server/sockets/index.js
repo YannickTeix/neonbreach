@@ -1,5 +1,10 @@
-const { LobbyService } = require('../services/lobbyService');
-const { checkWinCondition, parseCommand, handleAttack, handleDefend, handleBlurchange } = require('../services/gameService');
+﻿const { LobbyService } = require('../services/lobbyService');
+const {
+  checkWinCondition, parseCommand,
+  handleAttack, handleDefend, handleBlurchange,
+  handleBreachPrepare, handleBreachConnect, generateBreacherName,
+  BREACH_PREPARE_DURATION_MS,
+} = require('../services/gameService');
 
 function registerSocketHandlers(io) {
   const lobbyService = new LobbyService();
@@ -89,6 +94,89 @@ function registerSocketHandlers(io) {
 
       const { cmd, targetName } = parseCommand(command);
 
+      if (cmd === 'breach') {
+        const bParts = targetName.split(/\s+/);
+        const subCmd = bParts[0]?.toLowerCase();
+
+        if (subCmd === 'prepare') {
+          const serverName = bParts.slice(1).join(' ').trim();
+          if (!serverName) {
+            socket.emit('commandError', { message: 'Usage: breach prepare <nomServeur>' });
+            return;
+          }
+          const result = handleBreachPrepare(lobby, player, serverName);
+          if (result.error) {
+            socket.emit('commandError', { message: result.error });
+            return;
+          }
+          socket.emit('breachPreparing', {
+            breachId: result.breachId,
+            sourceServer: result.sourceServer,
+            duration: result.duration,
+          });
+          io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
+
+          const playerId = socket.id;
+          const lobbyId = socket.lobbyId;
+          const { breachId } = result;
+
+          setTimeout(() => {
+            const currentLobby = lobbyService.getLobby(lobbyId);
+            if (!currentLobby || !currentLobby.gameStarted) return;
+            const currentPlayer = lobbyService.getPlayer(currentLobby, playerId);
+            if (!currentPlayer) return;
+            const breacher = (currentPlayer.breachers || []).find((b) => b.id === breachId);
+            if (!breacher || breacher.state !== 'preparing') return;
+
+            const sourceServer = currentPlayer.servers.find((s) => s.name === breacher.sourceServer);
+            if (!sourceServer || sourceServer.health <= 0) {
+              currentPlayer.breachers = currentPlayer.breachers.filter((b) => b.id !== breachId);
+              socket.emit('breachCancelled', { breachId, reason: 'Serveur source detruit.' });
+              return;
+            }
+
+            const name = generateBreacherName(currentLobby);
+            breacher.name = name;
+            breacher.state = 'ready';
+            socket.emit('breachReady', {
+              breachId,
+              sourceServer: breacher.sourceServer,
+              breacherName: name,
+            });
+          }, BREACH_PREPARE_DURATION_MS);
+          return;
+        }
+
+        if (subCmd === 'connect') {
+          const connectParts = bParts.slice(1);
+          if (connectParts.length < 2) {
+            socket.emit('commandError', { message: 'Usage: breach connect <nomBreacher> <nomJoueur>' });
+            return;
+          }
+          const breacherName = connectParts[0];
+          const targetPlayerName = connectParts.slice(1).join(' ').trim();
+          const result = handleBreachConnect(lobby, player, breacherName, targetPlayerName);
+          if (result.error) {
+            socket.emit('commandError', { message: result.error });
+            return;
+          }
+          socket.emit('breachConnected', {
+            breacherId: result.breacherId,
+            breacherName: result.breacherName,
+            sourceServer: result.sourceServer,
+            targetPlayerId: result.targetPlayerId,
+            targetPlayerName: result.targetPlayerName,
+          });
+          io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
+          return;
+        }
+
+        socket.emit('commandError', {
+          message: 'Sous-commande inconnue. Utilisez: breach prepare <serveur> ou breach connect <breacher> <joueur>.',
+        });
+        return;
+      }
+
       if (!targetName) {
         socket.emit('commandError', { message: `Usage: ${cmd} <nom_du_serveur>` });
         return;
@@ -124,7 +212,9 @@ function registerSocketHandlers(io) {
       } else if (cmd === 'defend') {
         result = handleDefend(player, targetName);
       } else {
-        socket.emit('commandError', { message: `Commande inconnue: "${cmd}". Utilisez attack, defend ou blurchange.` });
+        socket.emit('commandError', {
+          message: `Commande inconnue: "${cmd}". Utilisez attack, defend, blurchange ou breach.`,
+        });
         return;
       }
 
@@ -136,6 +226,26 @@ function registerSocketHandlers(io) {
       io.to(socket.lobbyId).emit('gameEvent', result.event);
       io.to(socket.lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(lobby) });
       socket.emit('cooldownStart', { type: cmd, duration: result.cooldownDuration });
+
+      if (cmd === 'attack' && result.event.newHealth === 0) {
+        const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
+        if (targetPlayer && targetPlayer.breachers && targetPlayer.breachers.length > 0) {
+          const destroyed = targetPlayer.breachers.filter(
+            (b) => b.sourceServer === result.event.targetServerName
+          );
+          if (destroyed.length > 0) {
+            targetPlayer.breachers = targetPlayer.breachers.filter(
+              (b) => b.sourceServer !== result.event.targetServerName
+            );
+            for (const b of destroyed) {
+              io.to(targetPlayer.id).emit('breachCancelled', {
+                breachId: b.id,
+                reason: `Serveur ${b.sourceServer} détruit.`,
+              });
+            }
+          }
+        }
+      }
 
       if (cmd === 'attack') emitGameOver(socket.lobbyId, lobby);
     });

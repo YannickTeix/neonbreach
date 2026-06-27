@@ -1,7 +1,11 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { SocketService } from './socket.service';
 import { escapeHtml, getTime } from './health.util';
-import { BlurchangeEndPayload, BlurchangeStartPayload, GameEvent, GameOverInfo, Lobby, LogEntry, Player } from './models';
+import {
+  BlurchangeEndPayload, BlurchangeStartPayload,
+  Breacher, BreachPreparingPayload, BreachReadyPayload, BreachConnectedPayload, BreachCancelledPayload,
+  GameEvent, GameOverInfo, Lobby, LogEntry, Player,
+} from './models';
 
 export type Screen = 'home' | 'lobby' | 'game';
 
@@ -29,6 +33,7 @@ export class GameStateService {
   readonly cooldownStart = signal<CooldownStartPayload | null>(null);
   readonly blurredServers = signal<ReadonlySet<string>>(new Set());
   readonly myNeofrags = signal<number>(0);
+  readonly myBreachers = signal<Breacher[]>([]);
 
   readonly isHost = computed(() => {
     const l = this.lobby();
@@ -76,6 +81,7 @@ export class GameStateService {
     this.socket.on<LobbyPayload>('gameStarted').subscribe(({ lobby }) => {
       this.lobby.set(lobby);
       this.myNeofrags.set(0);
+      this.myBreachers.set([]);
       this.screen.set('game');
       this.addLog('Partie commencée ! Bonne chance.', 'log-system');
     });
@@ -122,6 +128,53 @@ export class GameStateService {
 
     this.socket.on<{ neofrags: number }>('neofragUpdate').subscribe(({ neofrags }) => {
       this.myNeofrags.set(neofrags);
+    });
+
+    this.socket.on<BreachPreparingPayload>('breachPreparing').subscribe(({ breachId, sourceServer, duration }) => {
+      const newBreacher: Breacher = {
+        id: breachId,
+        name: null,
+        sourceServer,
+        state: 'preparing',
+        connectedPlayerId: null,
+        connectedPlayerName: null,
+      };
+      this.myBreachers.update((list) => [...list, newBreacher]);
+      this.addLog(
+        `Préparation du brècheur sur <b>${escapeHtml(sourceServer)}</b>… (${duration / 1000}s)`,
+        'log-breach'
+      );
+    });
+
+    this.socket.on<BreachReadyPayload>('breachReady').subscribe(({ breachId, breacherName, sourceServer }) => {
+      this.myBreachers.update((list) =>
+        list.map((b) => b.id === breachId ? { ...b, name: breacherName, state: 'ready' as const } : b)
+      );
+      this.addLog(
+        `Brècheur <b>${escapeHtml(breacherName)}</b> opérationnel sur <b>${escapeHtml(sourceServer)}</b>`,
+        'log-breach'
+      );
+    });
+
+    this.socket.on<BreachConnectedPayload>('breachConnected').subscribe(
+      ({ breacherId, breacherName, targetPlayerId, targetPlayerName }) => {
+        this.myBreachers.update((list) =>
+          list.map((b) =>
+            b.id === breacherId
+              ? { ...b, state: 'connected' as const, connectedPlayerId: targetPlayerId, connectedPlayerName: targetPlayerName }
+              : b
+          )
+        );
+        this.addLog(
+          `Brècheur <b>${escapeHtml(breacherName)}</b> connecté à <b>${escapeHtml(targetPlayerName)}</b> — attaque déverrouillée`,
+          'log-breach'
+        );
+      }
+    );
+
+    this.socket.on<BreachCancelledPayload>('breachCancelled').subscribe(({ breachId, reason }) => {
+      this.myBreachers.update((list) => list.filter((b) => b.id !== breachId));
+      this.addLog(`Brècheur annulé — ${escapeHtml(reason)}`, 'log-system');
     });
 
     this.socket.on<CommandErrorPayload>('commandError').subscribe(({ message }) => {

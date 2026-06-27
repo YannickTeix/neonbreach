@@ -1,6 +1,7 @@
 <div class="opponent-card" [class.eliminated]="eliminated()">
   <div class="opponent-name">
     <span>{{ player.name }}</span>
+    <span class="opponent-breach-badge" *ngIf="hasBreach() && !eliminated()">⚡ BREACH</span>
     <span class="opponent-tag" *ngIf="eliminated()">✕ ÉLIMINÉ</span>
   </div>
   <div class="mini-server" [class.dead]="s.health <= 0" *ngFor="let s of player.servers">

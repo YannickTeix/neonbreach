@@ -1,0 +1,29 @@
+<div class="breacher-panel" *ngIf="activeBreachers().length > 0">
+  <div class="section-label">⛏ BRÈCHEURS</div>
+  <div class="breacher-list">
+    <div class="breacher-item" *ngFor="let b of activeBreachers()"
+         [class.breacher-connected]="b.state === 'connected'">
+      <svg class="drill-icon" viewBox="0 0 28 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="7" y="5" width="14" height="8" rx="2" fill="#0a1122" stroke="#ff8800" stroke-width="0.9"/>
+        <polygon points="7,9 2,6 2,12" fill="#ff8800" opacity="0.9"/>
+        <line x1="11" y1="5" x2="11" y2="13" stroke="#ff8800" stroke-width="0.4" stroke-opacity="0.5"/>
+        <line x1="14" y1="5" x2="14" y2="13" stroke="#ff8800" stroke-width="0.4" stroke-opacity="0.5"/>
+        <line x1="17" y1="5" x2="17" y2="13" stroke="#ff8800" stroke-width="0.4" stroke-opacity="0.5"/>
+        <line x1="21" y1="6" x2="25" y2="4" stroke="#ff8800" stroke-width="0.9" stroke-opacity="0.6" stroke-linecap="round"/>
+        <line x1="21" y1="12" x2="25" y2="14" stroke="#ff8800" stroke-width="0.9" stroke-opacity="0.6" stroke-linecap="round"/>
+        <circle cx="12.5" cy="9" r="0.8" fill="#ff8800" opacity="0.7"/>
+        <circle cx="15.5" cy="9" r="0.8" fill="#ff8800" opacity="0.7"/>
+        <circle cx="18.5" cy="9" r="0.8" fill="#ff8800" opacity="0.4"/>
+      </svg>
+      <div class="breacher-info">
+        <span class="breacher-name">{{ b.name }}</span>
+        <span class="breacher-source">{{ b.sourceServer }}</span>
+      </div>
+      <ng-container *ngIf="b.state === 'connected'">
+        <span class="breacher-cable">────►</span>
+        <span class="breacher-target">{{ b.connectedPlayerName }}</span>
+      </ng-container>
+      <span class="breacher-status" *ngIf="b.state === 'ready'">PRÊT</span>
+    </div>
+  </div>
+</div>

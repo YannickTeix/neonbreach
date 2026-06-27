@@ -2,3 +2,4 @@
 <div class="my-servers-grid">
   <app-server-card *ngFor="let server of state.myPlayer()?.servers ?? []; trackBy: trackByName" [server]="server"></app-server-card>
 </div>
+<app-breacher-panel></app-breacher-panel>

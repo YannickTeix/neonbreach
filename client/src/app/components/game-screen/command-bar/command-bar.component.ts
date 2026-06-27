@@ -145,14 +145,60 @@ export class CommandBarComponent implements OnDestroy {
           }
         }
       }
+    } else if (cmd === 'breach') {
+      const subCmd = parts[1]?.toLowerCase();
+      if (subCmd === 'prepare') {
+        const q = (parts[2] ?? '').toUpperCase();
+        const me = this.state.myPlayer();
+        if (me) {
+          for (const s of me.servers) {
+            if (s.health > 0 && s.name.startsWith(q)) {
+              pool.push({ name: s.name, label: `${s.health}%`, type: 'attack' });
+            }
+          }
+        }
+      } else if (subCmd === 'connect') {
+        if (parts.length <= 3) {
+          const q = (parts[2] ?? '').toUpperCase();
+          for (const b of this.state.myBreachers()) {
+            if (b.state === 'ready' && b.name && b.name.startsWith(q)) {
+              pool.push({ name: b.name, label: `sur ${b.sourceServer}`, type: 'blurchange' });
+            }
+          }
+        } else {
+          const q = (parts[3] ?? '').toUpperCase();
+          for (const p of this.state.opponents()) {
+            if (p.name.toUpperCase().startsWith(q)) {
+              pool.push({ name: p.name, label: 'adversaire', type: 'blurchange' });
+            }
+          }
+        }
+      }
     }
 
     this.suggestions.set(parts.length < 2 ? [] : pool);
   }
 
   pickSuggestion(s: Suggestion): void {
-    const cmd = this.commandText.trim().split(/\s+/)[0];
-    this.commandText = `${cmd} ${s.name}`;
+    const parts = this.commandText.trim().split(/\s+/);
+    const cmd = parts[0]?.toLowerCase();
+    if (cmd === 'breach') {
+      const subCmd = parts[1]?.toLowerCase();
+      if (subCmd === 'prepare') {
+        this.commandText = `breach prepare ${s.name}`;
+      } else if (subCmd === 'connect') {
+        if (parts.length <= 3) {
+          this.commandText = `breach connect ${s.name} `;
+          this.updateSuggestions();
+          this.inputRef.nativeElement.focus();
+          return;
+        } else {
+          this.commandText = `breach connect ${parts[2]} ${s.name}`;
+        }
+      }
+    } else {
+      this.commandText = `${cmd} ${s.name}`;
+    }
     this.suggestions.set([]);
     this.inputRef.nativeElement.focus();
   }

@@ -91,6 +91,7 @@ class LobbyService {
       servers: [],
       cooldowns: { attack: 0, defend: 0 },
       neofrags: 0,
+      breachers: [],
     };
   }
 

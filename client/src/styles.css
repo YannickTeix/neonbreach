@@ -670,8 +670,111 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   filter: blur(4px);
 }
 
-/* ── Log blurchange ── */
-.log-blur { color: #aa44ff; }
+/* ── Log blurchange / breach ── */
+.log-blur   { color: #aa44ff; }
+.log-breach { color: #ff8800; }
+
+/* ── BREACH indicator on server card (bottom-right) ── */
+.server-breach-indicator {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  z-index: 4;
+}
+.breach-state-preparing {
+  font-size: 7px;
+  color: #ff8800;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  animation: breachBlink 1.4s ease-in-out infinite;
+}
+.breach-state-ready {
+  font-size: 7px;
+  color: #ffcc00;
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  text-shadow: 0 0 6px rgba(255, 200, 0, 0.8);
+}
+@keyframes breachBlink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+/* ── BREACHER PANEL (below my servers) ── */
+.breacher-panel {
+  margin-top: 10px;
+  background: rgba(255, 136, 0, 0.04);
+  border: 1px solid rgba(255, 136, 0, 0.2);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.breacher-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 6px;
+}
+.breacher-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 136, 0, 0.04);
+  border: 1px solid rgba(255, 136, 0, 0.12);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 10px;
+  animation: breacherSlide 0.3s ease-out;
+}
+.breacher-item.breacher-connected {
+  border-color: rgba(255, 136, 0, 0.4);
+  background: rgba(255, 136, 0, 0.07);
+  box-shadow: 0 0 10px rgba(255, 136, 0, 0.08);
+}
+@keyframes breacherSlide {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.drill-icon { width: 28px; height: 18px; flex-shrink: 0; }
+.breacher-info { display: flex; flex-direction: column; gap: 1px; flex: 1; }
+.breacher-name {
+  color: #ff8800;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 0 6px rgba(255, 136, 0, 0.5);
+}
+.breacher-source { color: var(--text-dim); font-size: 8px; letter-spacing: 0.5px; }
+.breacher-cable {
+  color: #ff8800;
+  font-size: 9px;
+  letter-spacing: 1px;
+  animation: cableFlow 1.2s ease-in-out infinite;
+}
+@keyframes cableFlow {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 1; }
+}
+.breacher-target {
+  color: #ffcc00;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(255, 200, 0, 0.6);
+}
+.breacher-status { font-size: 8px; letter-spacing: 1px; color: #ff8800; opacity: 0.6; }
+
+/* ── OPPONENT CARD breach badge ── */
+.opponent-breach-badge {
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: #ff8800;
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(255, 136, 0, 0.7);
+  animation: breachBlink 1s ease-in-out infinite;
+}
+
+/* ── Command help breach ── */
+.cmd-kw-breach  { color: #ff8800; font-weight: bold; }
+.cmd-val-breach { color: #ff8800; font-weight: bold; }
 
 /* Floating damage / heal popup */
 .float-popup {
