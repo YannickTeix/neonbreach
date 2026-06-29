@@ -105,3 +105,28 @@ export interface BreachCancelledPayload {
   breachId: string;
   reason: string;
 }
+
+export interface ResearchModule {
+  state: 'preparing' | 'active';
+  sourceServer: string;
+  level: number;
+  neofrags: number;
+  neofragsToNextLevel: number | null;
+}
+
+export interface ResearchPreparingPayload {
+  sourceServer: string;
+  duration: number;
+}
+
+export interface ResearchReadyPayload {
+  sourceServer: string;
+}
+
+export interface ResearchUpdatedPayload {
+  module: ResearchModule;
+}
+
+export interface ResearchCancelledPayload {
+  reason: string;
+}

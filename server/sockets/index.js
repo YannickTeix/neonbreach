@@ -1,9 +1,10 @@
-﻿const { LobbyService } = require('../services/lobbyService');
+const { LobbyService } = require('../services/lobbyService');
 const {
   checkWinCondition, parseCommand,
   handleAttack, handleDefend, handleBlurchange,
   handleBreachPrepare, handleBreachConnect, generateBreacherName,
-  BREACH_PREPARE_DURATION_MS,
+  handleResearchPrepare, handleResearchUpload,
+  BREACH_PREPARE_DURATION_MS, RESEARCH_PREPARE_DURATION_MS,
 } = require('../services/gameService');
 
 function registerSocketHandlers(io) {
@@ -26,6 +27,30 @@ function registerSocketHandlers(io) {
       winner: winner === 'draw' ? null : lobbyService.sanitizePlayer(winner),
       draw: winner === 'draw',
     });
+  }
+
+  function cancelResourcesOnServerDestroy(io, targetPlayer, destroyedServerName) {
+    // Annuler les brècheurs du joueur ciblé dont le serveur source est détruit
+    if (targetPlayer.breachers && targetPlayer.breachers.length > 0) {
+      const destroyed = targetPlayer.breachers.filter((b) => b.sourceServer === destroyedServerName);
+      if (destroyed.length > 0) {
+        targetPlayer.breachers = targetPlayer.breachers.filter((b) => b.sourceServer !== destroyedServerName);
+        for (const b of destroyed) {
+          io.to(targetPlayer.id).emit('breachCancelled', {
+            breachId: b.id,
+            reason: `Serveur ${b.sourceServer} détruit.`,
+          });
+        }
+      }
+    }
+
+    // Annuler le module de recherche si son serveur source est détruit
+    if (targetPlayer.researchModule && targetPlayer.researchModule.sourceServer === destroyedServerName) {
+      targetPlayer.researchModule = null;
+      io.to(targetPlayer.id).emit('researchCancelled', {
+        reason: `Serveur ${destroyedServerName} détruit.`,
+      });
+    }
   }
 
   io.on('connection', (socket) => {
@@ -94,6 +119,7 @@ function registerSocketHandlers(io) {
 
       const { cmd, targetName } = parseCommand(command);
 
+      // ── BREACH ──────────────────────────────────────────────────────────
       if (cmd === 'breach') {
         const bParts = targetName.split(/\s+/);
         const subCmd = bParts[0]?.toLowerCase();
@@ -105,15 +131,9 @@ function registerSocketHandlers(io) {
             return;
           }
           const result = handleBreachPrepare(lobby, player, serverName);
-          if (result.error) {
-            socket.emit('commandError', { message: result.error });
-            return;
-          }
-          socket.emit('breachPreparing', {
-            breachId: result.breachId,
-            sourceServer: result.sourceServer,
-            duration: result.duration,
-          });
+          if (result.error) { socket.emit('commandError', { message: result.error }); return; }
+
+          socket.emit('breachPreparing', { breachId: result.breachId, sourceServer: result.sourceServer, duration: result.duration });
           io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
 
           const playerId = socket.id;
@@ -131,18 +151,14 @@ function registerSocketHandlers(io) {
             const sourceServer = currentPlayer.servers.find((s) => s.name === breacher.sourceServer);
             if (!sourceServer || sourceServer.currentIntegrity <= 0) {
               currentPlayer.breachers = currentPlayer.breachers.filter((b) => b.id !== breachId);
-              socket.emit('breachCancelled', { breachId, reason: 'Serveur source detruit.' });
+              socket.emit('breachCancelled', { breachId, reason: 'Serveur source détruit.' });
               return;
             }
 
             const name = generateBreacherName(currentLobby);
             breacher.name = name;
             breacher.state = 'ready';
-            socket.emit('breachReady', {
-              breachId,
-              sourceServer: breacher.sourceServer,
-              breacherName: name,
-            });
+            socket.emit('breachReady', { breachId, sourceServer: breacher.sourceServer, breacherName: name });
           }, BREACH_PREPARE_DURATION_MS);
           return;
         }
@@ -156,10 +172,8 @@ function registerSocketHandlers(io) {
           const breacherName = connectParts[0];
           const targetPlayerName = connectParts.slice(1).join(' ').trim();
           const result = handleBreachConnect(lobby, player, breacherName, targetPlayerName);
-          if (result.error) {
-            socket.emit('commandError', { message: result.error });
-            return;
-          }
+          if (result.error) { socket.emit('commandError', { message: result.error }); return; }
+
           socket.emit('breachConnected', {
             breacherId: result.breacherId,
             breacherName: result.breacherName,
@@ -171,12 +185,70 @@ function registerSocketHandlers(io) {
           return;
         }
 
-        socket.emit('commandError', {
-          message: 'Sous-commande inconnue. Utilisez: breach prepare <serveur> ou breach connect <breacher> <joueur>.',
-        });
+        socket.emit('commandError', { message: 'Sous-commande inconnue. Utilisez: breach prepare <serveur> ou breach connect <breacher> <joueur>.' });
         return;
       }
 
+      // ── RESEARCH ─────────────────────────────────────────────────────────
+      if (cmd === 'research') {
+        const rParts = targetName.split(/\s+/);
+        const subCmd = rParts[0]?.toLowerCase();
+
+        if (subCmd === 'prepare') {
+          const serverName = rParts.slice(1).join(' ').trim();
+          if (!serverName) {
+            socket.emit('commandError', { message: 'Usage: research prepare <nomServeur>' });
+            return;
+          }
+          const result = handleResearchPrepare(player, serverName);
+          if (result.error) { socket.emit('commandError', { message: result.error }); return; }
+
+          socket.emit('researchPreparing', { sourceServer: result.sourceServer, duration: result.duration });
+          io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
+
+          const playerId = socket.id;
+          const lobbyId = socket.lobbyId;
+          const sourceServer = result.sourceServer;
+
+          setTimeout(() => {
+            const currentLobby = lobbyService.getLobby(lobbyId);
+            if (!currentLobby || !currentLobby.gameStarted) return;
+            const currentPlayer = lobbyService.getPlayer(currentLobby, playerId);
+            if (!currentPlayer || !currentPlayer.researchModule) return;
+            if (currentPlayer.researchModule.state !== 'preparing') return;
+
+            const srv = currentPlayer.servers.find((s) => s.name === sourceServer);
+            if (!srv || srv.currentIntegrity <= 0) {
+              currentPlayer.researchModule = null;
+              socket.emit('researchCancelled', { reason: 'Serveur source détruit.' });
+              return;
+            }
+
+            currentPlayer.researchModule.state = 'active';
+            socket.emit('researchReady', { sourceServer });
+          }, RESEARCH_PREPARE_DURATION_MS);
+          return;
+        }
+
+        if (subCmd === 'upload') {
+          const amountStr = rParts[1];
+          if (!amountStr) {
+            socket.emit('commandError', { message: 'Usage: research upload <nbNeofrags>' });
+            return;
+          }
+          const result = handleResearchUpload(player, amountStr);
+          if (result.error) { socket.emit('commandError', { message: result.error }); return; }
+
+          socket.emit('researchUpdated', { module: result.module });
+          io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
+          return;
+        }
+
+        socket.emit('commandError', { message: 'Sous-commande inconnue. Utilisez: research prepare <serveur> ou research upload <neofrags>.' });
+        return;
+      }
+
+      // ── COMMANDES AVEC CIBLE SIMPLE ───────────────────────────────────────
       if (!targetName) {
         socket.emit('commandError', { message: `Usage: ${cmd} <nom_du_serveur>` });
         return;
@@ -213,7 +285,7 @@ function registerSocketHandlers(io) {
         result = handleDefend(player, targetName);
       } else {
         socket.emit('commandError', {
-          message: `Commande inconnue: "${cmd}". Utilisez attack, defend, blurchange ou breach.`,
+          message: `Commande inconnue: "${cmd}". Utilisez attack, defend, blurchange, breach ou research.`,
         });
         return;
       }
@@ -232,21 +304,8 @@ function registerSocketHandlers(io) {
 
         if (result.event.newCurrentIntegrity === 0) {
           const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
-          if (targetPlayer && targetPlayer.breachers && targetPlayer.breachers.length > 0) {
-            const destroyed = targetPlayer.breachers.filter(
-              (b) => b.sourceServer === result.event.targetServerName
-            );
-            if (destroyed.length > 0) {
-              targetPlayer.breachers = targetPlayer.breachers.filter(
-                (b) => b.sourceServer !== result.event.targetServerName
-              );
-              for (const b of destroyed) {
-                io.to(targetPlayer.id).emit('breachCancelled', {
-                  breachId: b.id,
-                  reason: `Serveur ${b.sourceServer} détruit.`,
-                });
-              }
-            }
+          if (targetPlayer) {
+            cancelResourcesOnServerDestroy(io, targetPlayer, result.event.targetServerName);
           }
         }
 

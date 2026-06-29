@@ -1,0 +1,22 @@
+<div class="research-module-panel" *ngIf="module() as m">
+  <div class="research-panel-header">
+
+    <div class="research-sonar" aria-hidden="true">
+      <div class="sonar-arm"></div>
+      <div class="sonar-ping"></div>
+      <div class="sonar-center"></div>
+    </div>
+
+    <div class="research-info">
+      <div class="research-title-label">RESEARCH MODULE</div>
+      <div class="research-level">LVL {{ m.level }}</div>
+    </div>
+  </div>
+
+  <div class="research-gauge-wrap" *ngIf="m.level < 5">
+    <div class="research-gauge-fill" [style.width.%]="gaugePercent()"></div>
+    <span class="research-gauge-label">{{ m.neofrags }} / {{ m.neofragsToNextLevel }}</span>
+  </div>
+
+  <div class="research-max" *ngIf="m.level >= 5">MAX</div>
+</div>

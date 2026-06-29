@@ -1,5 +1,6 @@
 const { checkWinCondition, handleAttack, handleDefend, ATTACK_COOLDOWN_MS, ATTACK_MAX_NEOFRAGS, DEFEND_HEAL, DEFEND_COOLDOWN_MS } = require('./serverService');
 const { generateBreacherName, handleBreachPrepare, handleBreachConnect, BREACH_PREPARE_COST, BREACH_CONNECT_COST, BREACH_PREPARE_DURATION_MS } = require('./breachService');
+const { handleResearchPrepare, handleResearchUpload, RESEARCH_PREPARE_DURATION_MS } = require('./researchService');
 
 const BLURCHANGE_COOLDOWN_MS = 40000;
 const BLURCHANGE_DURATION_MS = 15000;
@@ -56,5 +57,8 @@ module.exports = {
   handleBreachPrepare,
   handleBreachConnect,
   generateBreacherName,
+  handleResearchPrepare,
+  handleResearchUpload,
   BREACH_PREPARE_DURATION_MS,
+  RESEARCH_PREPARE_DURATION_MS,
 };

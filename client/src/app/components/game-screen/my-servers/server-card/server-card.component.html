@@ -42,6 +42,11 @@
       </svg>&thinsp;/&thinsp;{{ server.neofragFreq / 1000 }}s
     </div>
 
+    <div class="server-research-indicator" *ngIf="!isDead() && researchOnServer() as r">
+      <span class="research-state-preparing" *ngIf="r.state === 'preparing'">⏳ research</span>
+      <span class="research-state-active" *ngIf="r.state === 'active'">◉ research mod</span>
+    </div>
+
     <div class="server-breach-indicator" *ngIf="!isDead() && breacherOnServer() as b">
       <span class="breach-state-preparing" *ngIf="b.state === 'preparing'">⏳ breacher</span>
       <span class="breach-state-ready" *ngIf="b.state !== 'preparing'">⚡ {{ b.name }}</span>

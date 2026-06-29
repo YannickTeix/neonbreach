@@ -6,7 +6,7 @@ import { GameStateService } from '../../../core/game-state.service';
 interface Suggestion {
   name: string;
   label: string;
-  type: 'attack' | 'defend' | 'blurchange';
+  type: 'attack' | 'defend' | 'blurchange' | 'research';
 }
 
 interface CooldownView {
@@ -182,6 +182,29 @@ export class CommandBarComponent implements OnDestroy {
           }
         }
       }
+    } else if (cmd === 'research') {
+      const subCmd = parts[1]?.toLowerCase();
+      if (subCmd === 'prepare') {
+        const q = (parts[2] ?? '').toUpperCase();
+        const me = this.state.myPlayer();
+        if (me && !this.state.myResearchModule()) {
+          for (const s of me.servers) {
+            if (s.currentIntegrity > 0 && s.name.startsWith(q)) {
+              pool.push({ name: s.name, label: `${s.currentIntegrity}%`, type: 'research' });
+            }
+          }
+        }
+      } else if (subCmd === 'upload') {
+        const q = parts[2] ?? '';
+        const mod = this.state.myResearchModule();
+        if (mod?.state === 'active' && mod.neofragsToNextLevel !== null) {
+          const needed = mod.neofragsToNextLevel - mod.neofrags;
+          const maxAffordable = this.state.myNeofrags();
+          [10, 25, 50, 100, 200]
+            .filter((n) => n <= maxAffordable && String(n).startsWith(q))
+            .forEach((n) => pool.push({ name: String(n), label: `${Math.min(n, needed)} vers lvl ${mod.level + 1}`, type: 'research' }));
+        }
+      }
     }
 
     this.suggestions.set(parts.length < 2 ? [] : pool);
@@ -211,6 +234,13 @@ export class CommandBarComponent implements OnDestroy {
         } else {
           this.commandText = `breach connect ${parts[2]} ${s.name}`;
         }
+      }
+    } else if (cmd === 'research') {
+      const subCmd = parts[1]?.toLowerCase();
+      if (subCmd === 'prepare') {
+        this.commandText = `research prepare ${s.name}`;
+      } else if (subCmd === 'upload') {
+        this.commandText = `research upload ${s.name}`;
       }
     } else {
       this.commandText = `${cmd} ${s.name}`;

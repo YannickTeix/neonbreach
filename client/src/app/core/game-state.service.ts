@@ -4,6 +4,7 @@ import { escapeHtml, getTime } from './health.util';
 import {
   BlurchangeEndPayload, BlurchangeStartPayload,
   Breacher, BreachPreparingPayload, BreachReadyPayload, BreachConnectedPayload, BreachCancelledPayload,
+  ResearchModule, ResearchPreparingPayload, ResearchReadyPayload, ResearchUpdatedPayload, ResearchCancelledPayload,
   GameEvent, GameOverInfo, Lobby, LogEntry, Player,
 } from './models';
 
@@ -34,6 +35,7 @@ export class GameStateService {
   readonly blurredServers = signal<ReadonlySet<string>>(new Set());
   readonly myNeofrags = signal<number>(0);
   readonly myBreachers = signal<Breacher[]>([]);
+  readonly myResearchModule = signal<ResearchModule | null>(null);
 
   readonly isHost = computed(() => {
     const l = this.lobby();
@@ -82,6 +84,7 @@ export class GameStateService {
       this.lobby.set(lobby);
       this.myNeofrags.set(0);
       this.myBreachers.set([]);
+      this.myResearchModule.set(null);
       this.screen.set('game');
       this.addLog('Partie commencée ! Bonne chance.', 'log-system');
     });
@@ -175,6 +178,37 @@ export class GameStateService {
     this.socket.on<BreachCancelledPayload>('breachCancelled').subscribe(({ breachId, reason }) => {
       this.myBreachers.update((list) => list.filter((b) => b.id !== breachId));
       this.addLog(`Brècheur annulé — ${escapeHtml(reason)}`, 'log-system');
+    });
+
+    this.socket.on<ResearchPreparingPayload>('researchPreparing').subscribe(({ sourceServer, duration }) => {
+      this.myResearchModule.set({
+        state: 'preparing',
+        sourceServer,
+        level: 1,
+        neofrags: 0,
+        neofragsToNextLevel: 100,
+      });
+      this.addLog(
+        `Préparation du module de recherche sur <b>${escapeHtml(sourceServer)}</b>… (${duration / 1000}s)`,
+        'log-research'
+      );
+    });
+
+    this.socket.on<ResearchReadyPayload>('researchReady').subscribe(({ sourceServer }) => {
+      this.myResearchModule.update((m) => m ? { ...m, state: 'active' as const } : m);
+      this.addLog(
+        `Module de recherche opérationnel sur <b>${escapeHtml(sourceServer)}</b>`,
+        'log-research'
+      );
+    });
+
+    this.socket.on<ResearchUpdatedPayload>('researchUpdated').subscribe(({ module }) => {
+      this.myResearchModule.set(module);
+    });
+
+    this.socket.on<ResearchCancelledPayload>('researchCancelled').subscribe(({ reason }) => {
+      this.myResearchModule.set(null);
+      this.addLog(`Module de recherche annulé — ${escapeHtml(reason)}`, 'log-system');
     });
 
     this.socket.on<CommandErrorPayload>('commandError').subscribe(({ message }) => {

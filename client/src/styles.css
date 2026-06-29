@@ -712,7 +712,149 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 
 /* ── Log blurchange / breach ── */
 .log-blur   { color: #aa44ff; }
-.log-breach { color: #ff8800; }
+.log-breach   { color: #ff8800; }
+.log-research { color: #00aaff; }
+
+/* ── RESEARCH indicator on server card ── */
+.server-research-indicator {
+  position: absolute;
+  bottom: 22px;
+  right: 5px;
+  z-index: 4;
+  font-size: 7px;
+  letter-spacing: 0.5px;
+}
+.research-state-preparing {
+  color: rgba(0, 170, 255, 0.7);
+  animation: breachBlink 1.5s ease-in-out infinite;
+}
+.research-state-active {
+  color: #00aaff;
+  text-shadow: 0 0 6px rgba(0,170,255,0.6);
+}
+
+/* ── RESEARCH MODULE panel ── */
+.research-module-panel {
+  margin-top: 10px;
+  background: linear-gradient(160deg, #030b14, #021018);
+  border: 1px solid rgba(0, 170, 255, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.research-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/* Sonar SVG-like CSS */
+.research-sonar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 170, 255, 0.4);
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #020810;
+}
+.research-sonar::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 0; right: 0; height: 1px;
+  background: rgba(0, 170, 255, 0.15);
+}
+.research-sonar::after {
+  content: '';
+  position: absolute;
+  left: 50%; top: 0; bottom: 0; width: 1px;
+  background: rgba(0, 170, 255, 0.15);
+}
+.sonar-arm {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 50%; height: 1px;
+  background: linear-gradient(90deg, rgba(0,170,255,0.9), transparent);
+  transform-origin: 0% 50%;
+  animation: sonarSweep 2.5s linear infinite;
+}
+.sonar-ping {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid rgba(0, 170, 255, 0.5);
+  animation: sonarPing 2.5s ease-out infinite;
+}
+.sonar-center {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px; height: 4px;
+  background: #00aaff;
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0,170,255,0.9);
+}
+@keyframes sonarSweep {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes sonarPing {
+  0%   { width: 0;    height: 0;    opacity: 0.7; }
+  100% { width: 44px; height: 44px; opacity: 0; }
+}
+
+.research-info { flex: 1; }
+.research-title-label {
+  font-size: 8px;
+  color: rgba(0, 170, 255, 0.6);
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+.research-level {
+  font-size: 20px;
+  color: #00aaff;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(0,170,255,0.6);
+  line-height: 1.1;
+}
+
+/* Gauge */
+.research-gauge-wrap {
+  background: #0a0a1a;
+  border: 1px solid #1a1a30;
+  border-radius: 4px;
+  height: 14px;
+  overflow: hidden;
+  position: relative;
+}
+.research-gauge-fill {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #003366, #0077cc, #00aaff);
+  border-radius: 4px;
+  transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.research-gauge-label {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 8px;
+  color: rgba(255,255,255,0.85);
+  letter-spacing: 1px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.research-max {
+  text-align: center;
+  margin-top: 2px;
+  font-size: 12px;
+  color: #00aaff;
+  letter-spacing: 5px;
+  text-shadow: 0 0 12px rgba(0,170,255,0.9);
+  font-weight: bold;
+}
 
 /* ── BREACH indicator on server card (bottom-right) ── */
 .server-breach-indicator {

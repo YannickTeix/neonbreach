@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, OnDestroy, SimpleChanges, computed, effect, inject, signal } from '@angular/core';
 import { GameStateService } from '../../../../core/game-state.service';
 import { integrityClass, integrityColor } from '../../../../core/health.util';
-import { Breacher, ServerInfo } from '../../../../core/models';
+import { Breacher, ResearchModule, ServerInfo } from '../../../../core/models';
 
 @Component({
   selector: 'app-server-card',
@@ -21,6 +21,10 @@ export class ServerCardComponent implements OnChanges, OnDestroy {
   readonly breacherOnServer = computed<Breacher | null>(() =>
     this.state.myBreachers().find((b) => b.sourceServer === this.server.name) ?? null
   );
+  readonly researchOnServer = computed<ResearchModule | null>(() => {
+    const m = this.state.myResearchModule();
+    return (m && m.sourceServer === this.server.name) ? m : null;
+  });
 
   private prevBlurred = false;
   private popupTimeout?: ReturnType<typeof setTimeout>;

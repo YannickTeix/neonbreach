@@ -92,6 +92,7 @@ class LobbyService {
       cooldowns: { attack: 0, defend: 0 },
       neofrags: 0,
       breachers: [],
+      researchModule: null,
     };
   }
 
