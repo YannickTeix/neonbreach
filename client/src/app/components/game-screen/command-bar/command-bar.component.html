@@ -52,6 +52,7 @@
       <span class="cmd-help-title">// COMMANDES DISPONIBLES</span>
       <button class="cmd-help-close" (click)="showHelp.set(false)" title="Fermer">✕</button>
     </div>
+    <div class="cmd-help-scroll">
     <ul class="cmd-help-list">
       <li class="cmd-help-item">
         <div class="cmd-help-syntax"><span class="cmd-kw">attack</span>&nbsp;<span class="cmd-arg">$serverName</span>&nbsp;<span class="cmd-arg">$neofrags</span></div>
@@ -73,7 +74,29 @@
         <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-breach">breach connect</span>&nbsp;<span class="cmd-arg">$breacher</span>&nbsp;<span class="cmd-arg">$player</span></div>
         <div class="cmd-help-desc">Connecte un brècheur à un adversaire — coûte <span class="cmd-val cmd-val-breach">15</span> neofrags · déverrouille <span class="cmd-val cmd-kw">attack</span></div>
       </li>
+
+      <hr class="cmd-help-separator">
+      <li class="cmd-help-section-label">MODULE DE RECHERCHE</li>
+
+      <li class="cmd-help-item">
+        <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-research">research prepare</span>&nbsp;<span class="cmd-arg">$serverName</span></div>
+        <div class="cmd-help-desc">Démarre un module de recherche sur votre serveur — coûte <span class="cmd-val cmd-val-research">15</span> neofrags · préparation <span class="cmd-val">15s</span> · un seul module à la fois</div>
+      </li>
+      <li class="cmd-help-item">
+        <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-research">research upload</span>&nbsp;<span class="cmd-arg">$neofrags</span></div>
+        <div class="cmd-help-desc">Injecte des neofrags dans le module — atteindre les seuils <span class="cmd-val cmd-val-research">100 → 128 → 256 → 512</span> monte le niveau (max <span class="cmd-val">LVL 5</span>)</div>
+      </li>
+
+      <ng-container *ngIf="state.myResearchModule()?.state === 'active'">
+        <hr class="cmd-help-separator">
+        <li class="cmd-help-section-label">DÉBLOQUÉ PAR LE MODULE DE RECHERCHE</li>
+        <li class="cmd-help-item">
+          <div class="cmd-help-syntax"><span class="cmd-kw cmd-kw-upgrade">upgrade</span>&nbsp;<span class="cmd-arg">$serverName</span>&nbsp;<span class="cmd-arg">integrity</span></div>
+          <div class="cmd-help-desc">Améliore l'integrity max d'un serveur de <span class="cmd-val cmd-val-upgrade">+20</span> — coûte <span class="cmd-val cmd-val-upgrade">30</span> neofrags · préparation <span class="cmd-val">8s</span> · max <span class="cmd-val">3</span> par serveur · perdu si le module est détruit</div>
+        </li>
+      </ng-container>
     </ul>
     <p class="cmd-help-tip">Appuie sur <kbd>↑↓</kbd> pour naviguer dans les suggestions.</p>
+    </div>
   </div>
 </div>

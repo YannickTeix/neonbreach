@@ -4,7 +4,8 @@ const {
   handleAttack, handleDefend, handleBlurchange,
   handleBreachPrepare, handleBreachConnect, generateBreacherName,
   handleResearchPrepare, handleResearchUpload,
-  BREACH_PREPARE_DURATION_MS, RESEARCH_PREPARE_DURATION_MS,
+  handleUpgradeIntegrity, applyIntegrityUpgrade, resetIntegrityUpgrades,
+  BREACH_PREPARE_DURATION_MS, RESEARCH_PREPARE_DURATION_MS, UPGRADE_INTEGRITY_DURATION_MS,
 } = require('../services/gameService');
 
 function registerSocketHandlers(io) {
@@ -20,7 +21,6 @@ function registerSocketHandlers(io) {
   function emitGameOver(lobbyId, lobby) {
     const winner = checkWinCondition(lobby);
     if (!winner) return;
-
     clearNeofragIntervals(lobby);
     lobby.gameStarted = false;
     io.to(lobbyId).emit('gameOver', {
@@ -29,69 +29,49 @@ function registerSocketHandlers(io) {
     });
   }
 
-  function cancelResourcesOnServerDestroy(io, targetPlayer, destroyedServerName) {
-    // Annuler les brècheurs du joueur ciblé dont le serveur source est détruit
+  // Annule brècheurs + module de recherche (et resets d'integrity) quand un serveur est détruit
+  function cancelResourcesOnServerDestroy(targetPlayer, destroyedServerName) {
     if (targetPlayer.breachers && targetPlayer.breachers.length > 0) {
       const destroyed = targetPlayer.breachers.filter((b) => b.sourceServer === destroyedServerName);
       if (destroyed.length > 0) {
         targetPlayer.breachers = targetPlayer.breachers.filter((b) => b.sourceServer !== destroyedServerName);
         for (const b of destroyed) {
-          io.to(targetPlayer.id).emit('breachCancelled', {
-            breachId: b.id,
-            reason: `Serveur ${b.sourceServer} détruit.`,
-          });
+          io.to(targetPlayer.id).emit('breachCancelled', { breachId: b.id, reason: `Serveur ${b.sourceServer} détruit.` });
         }
       }
     }
 
-    // Annuler le module de recherche si son serveur source est détruit
     if (targetPlayer.researchModule && targetPlayer.researchModule.sourceServer === destroyedServerName) {
+      const wasActive = targetPlayer.researchModule.state === 'active';
       targetPlayer.researchModule = null;
-      io.to(targetPlayer.id).emit('researchCancelled', {
-        reason: `Serveur ${destroyedServerName} détruit.`,
-      });
+      if (wasActive) resetIntegrityUpgrades(targetPlayer);
+      io.to(targetPlayer.id).emit('researchCancelled', { reason: `Serveur ${destroyedServerName} détruit.` });
     }
   }
 
   io.on('connection', (socket) => {
     socket.on('createLobby', ({ playerName }) => {
       if (!playerName || !playerName.trim()) return;
-
       const lobby = lobbyService.createLobby(socket.id, playerName);
       socket.join(lobby.id);
       socket.lobbyId = lobby.id;
-
-      socket.emit('lobbyCreated', {
-        lobbyId: lobby.id,
-        playerId: socket.id,
-        lobby: lobbyService.sanitizeLobby(lobby),
-      });
+      socket.emit('lobbyCreated', { lobbyId: lobby.id, playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
     socket.on('joinLobby', ({ lobbyId, playerName }) => {
       if (!playerName || !playerName.trim()) return;
-
       const { error, lobby, player } = lobbyService.joinLobby(lobbyId, socket.id, playerName);
       if (error) { socket.emit('error', { message: error }); return; }
-
       socket.join(lobbyId);
       socket.lobbyId = lobbyId;
-
       socket.emit('lobbyJoined', { playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
-      socket.to(lobbyId).emit('playerJoined', {
-        player: lobbyService.sanitizePlayer(player),
-        lobby: lobbyService.sanitizeLobby(lobby),
-      });
+      socket.to(lobbyId).emit('playerJoined', { player: lobbyService.sanitizePlayer(player), lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
     socket.on('startGame', () => {
       const lobby = lobbyService.getLobby(socket.lobbyId);
       if (!lobby || lobby.host !== socket.id) return;
-
-      if (lobby.players.length < 2) {
-        socket.emit('error', { message: 'Il faut au moins 2 joueurs.' });
-        return;
-      }
+      if (lobby.players.length < 2) { socket.emit('error', { message: 'Il faut au moins 2 joueurs.' }); return; }
 
       lobbyService.startGame(lobby);
 
@@ -126,10 +106,7 @@ function registerSocketHandlers(io) {
 
         if (subCmd === 'prepare') {
           const serverName = bParts.slice(1).join(' ').trim();
-          if (!serverName) {
-            socket.emit('commandError', { message: 'Usage: breach prepare <nomServeur>' });
-            return;
-          }
+          if (!serverName) { socket.emit('commandError', { message: 'Usage: breach prepare <nomServeur>' }); return; }
           const result = handleBreachPrepare(lobby, player, serverName);
           if (result.error) { socket.emit('commandError', { message: result.error }); return; }
 
@@ -147,14 +124,12 @@ function registerSocketHandlers(io) {
             if (!currentPlayer) return;
             const breacher = (currentPlayer.breachers || []).find((b) => b.id === breachId);
             if (!breacher || breacher.state !== 'preparing') return;
-
             const sourceServer = currentPlayer.servers.find((s) => s.name === breacher.sourceServer);
             if (!sourceServer || sourceServer.currentIntegrity <= 0) {
               currentPlayer.breachers = currentPlayer.breachers.filter((b) => b.id !== breachId);
               socket.emit('breachCancelled', { breachId, reason: 'Serveur source détruit.' });
               return;
             }
-
             const name = generateBreacherName(currentLobby);
             breacher.name = name;
             breacher.state = 'ready';
@@ -165,15 +140,11 @@ function registerSocketHandlers(io) {
 
         if (subCmd === 'connect') {
           const connectParts = bParts.slice(1);
-          if (connectParts.length < 2) {
-            socket.emit('commandError', { message: 'Usage: breach connect <nomBreacher> <nomJoueur>' });
-            return;
-          }
+          if (connectParts.length < 2) { socket.emit('commandError', { message: 'Usage: breach connect <nomBreacher> <nomJoueur>' }); return; }
           const breacherName = connectParts[0];
           const targetPlayerName = connectParts.slice(1).join(' ').trim();
           const result = handleBreachConnect(lobby, player, breacherName, targetPlayerName);
           if (result.error) { socket.emit('commandError', { message: result.error }); return; }
-
           socket.emit('breachConnected', {
             breacherId: result.breacherId,
             breacherName: result.breacherName,
@@ -196,10 +167,7 @@ function registerSocketHandlers(io) {
 
         if (subCmd === 'prepare') {
           const serverName = rParts.slice(1).join(' ').trim();
-          if (!serverName) {
-            socket.emit('commandError', { message: 'Usage: research prepare <nomServeur>' });
-            return;
-          }
+          if (!serverName) { socket.emit('commandError', { message: 'Usage: research prepare <nomServeur>' }); return; }
           const result = handleResearchPrepare(player, serverName);
           if (result.error) { socket.emit('commandError', { message: result.error }); return; }
 
@@ -216,14 +184,12 @@ function registerSocketHandlers(io) {
             const currentPlayer = lobbyService.getPlayer(currentLobby, playerId);
             if (!currentPlayer || !currentPlayer.researchModule) return;
             if (currentPlayer.researchModule.state !== 'preparing') return;
-
             const srv = currentPlayer.servers.find((s) => s.name === sourceServer);
             if (!srv || srv.currentIntegrity <= 0) {
               currentPlayer.researchModule = null;
               socket.emit('researchCancelled', { reason: 'Serveur source détruit.' });
               return;
             }
-
             currentPlayer.researchModule.state = 'active';
             socket.emit('researchReady', { sourceServer });
           }, RESEARCH_PREPARE_DURATION_MS);
@@ -232,19 +198,56 @@ function registerSocketHandlers(io) {
 
         if (subCmd === 'upload') {
           const amountStr = rParts[1];
-          if (!amountStr) {
-            socket.emit('commandError', { message: 'Usage: research upload <nbNeofrags>' });
-            return;
-          }
+          if (!amountStr) { socket.emit('commandError', { message: 'Usage: research upload <nbNeofrags>' }); return; }
           const result = handleResearchUpload(player, amountStr);
           if (result.error) { socket.emit('commandError', { message: result.error }); return; }
-
           socket.emit('researchUpdated', { module: result.module });
           io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
           return;
         }
 
         socket.emit('commandError', { message: 'Sous-commande inconnue. Utilisez: research prepare <serveur> ou research upload <neofrags>.' });
+        return;
+      }
+
+      // ── UPGRADE ──────────────────────────────────────────────────────────
+      if (cmd === 'upgrade') {
+        const uParts = targetName.split(/\s+/);
+        const serverName = uParts[0];
+        const subType = uParts[1];
+        if (!serverName || subType !== 'INTEGRITY') {
+          socket.emit('commandError', { message: 'Usage: upgrade <nomServeur> integrity' });
+          return;
+        }
+        const result = handleUpgradeIntegrity(player, serverName);
+        if (result.error) { socket.emit('commandError', { message: result.error }); return; }
+
+        socket.emit('upgradePreparing', { serverName: result.serverName, duration: result.duration });
+        io.to(player.id).emit('neofragUpdate', { neofrags: result.neofrags });
+
+        const playerId = socket.id;
+        const lobbyId = socket.lobbyId;
+        const upgServerName = result.serverName;
+
+        setTimeout(() => {
+          const currentLobby = lobbyService.getLobby(lobbyId);
+          if (!currentLobby || !currentLobby.gameStarted) return;
+          const currentPlayer = lobbyService.getPlayer(currentLobby, playerId);
+          if (!currentPlayer) return;
+
+          const srv = currentPlayer.servers.find((s) => s.name === upgServerName);
+          if (!srv) return;
+
+          // Decrement pending even if conditions aren't met
+          srv.integrityPending = Math.max(0, (srv.integrityPending || 0) - 1);
+
+          if (!currentPlayer.researchModule || currentPlayer.researchModule.state !== 'active') return;
+          if (srv.currentIntegrity <= 0) return;
+
+          applyIntegrityUpgrade(srv);
+          socket.emit('upgradeApplied', { serverName: upgServerName, newIntegrityMax: srv.integrityMax });
+          io.to(lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(currentLobby) });
+        }, UPGRADE_INTEGRITY_DURATION_MS);
         return;
       }
 
@@ -256,24 +259,13 @@ function registerSocketHandlers(io) {
 
       if (cmd === 'blurchange') {
         const result = handleBlurchange(lobby, player, targetName);
-        if (result.error) {
-          socket.emit('commandError', { message: result.error, cooldown: result.cooldown });
-          return;
-        }
-        socket.to(socket.lobbyId).emit('blurchangeStart', {
-          playerId: player.id,
-          playerName: player.name,
-          targetPlayerName: result.targetPlayerName,
-          serverNames: result.serverNames,
-        });
+        if (result.error) { socket.emit('commandError', { message: result.error, cooldown: result.cooldown }); return; }
+        socket.to(socket.lobbyId).emit('blurchangeStart', { playerId: player.id, playerName: player.name, targetPlayerName: result.targetPlayerName, serverNames: result.serverNames });
         socket.emit('cooldownStart', { type: 'blurchange', duration: result.cooldownDuration });
         const lobbyId = socket.lobbyId;
         const casterId = socket.id;
         setTimeout(() => {
-          io.to(lobbyId).except(casterId).emit('blurchangeEnd', {
-            targetPlayerName: result.targetPlayerName,
-            serverNames: result.serverNames,
-          });
+          io.to(lobbyId).except(casterId).emit('blurchangeEnd', { targetPlayerName: result.targetPlayerName, serverNames: result.serverNames });
         }, result.blurDuration);
         return;
       }
@@ -284,9 +276,7 @@ function registerSocketHandlers(io) {
       } else if (cmd === 'defend') {
         result = handleDefend(player, targetName);
       } else {
-        socket.emit('commandError', {
-          message: `Commande inconnue: "${cmd}". Utilisez attack, defend, blurchange, breach ou research.`,
-        });
+        socket.emit('commandError', { message: `Commande inconnue: "${cmd}". Utilisez attack, defend, blurchange, breach, research ou upgrade.` });
         return;
       }
 
@@ -295,22 +285,21 @@ function registerSocketHandlers(io) {
         return;
       }
 
+      // Mutations attack spécifiques AVANT l'émission de gameState
+      if (cmd === 'attack') {
+        io.to(player.id).emit('neofragUpdate', { neofrags: result.newNeofrags });
+        if (result.event.newCurrentIntegrity === 0) {
+          const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
+          if (targetPlayer) cancelResourcesOnServerDestroy(targetPlayer, result.event.targetServerName);
+        }
+      }
+
+      // gameState après toutes les mutations (inclut les resets d'integrity éventuels)
       io.to(socket.lobbyId).emit('gameEvent', result.event);
       io.to(socket.lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(lobby) });
       socket.emit('cooldownStart', { type: cmd, duration: result.cooldownDuration });
 
-      if (cmd === 'attack') {
-        io.to(player.id).emit('neofragUpdate', { neofrags: result.newNeofrags });
-
-        if (result.event.newCurrentIntegrity === 0) {
-          const targetPlayer = lobby.players.find((p) => p.id === result.event.targetPlayerId);
-          if (targetPlayer) {
-            cancelResourcesOnServerDestroy(io, targetPlayer, result.event.targetServerName);
-          }
-        }
-
-        emitGameOver(socket.lobbyId, lobby);
-      }
+      if (cmd === 'attack') emitGameOver(socket.lobbyId, lobby);
     });
 
     socket.on('disconnect', () => {
@@ -318,17 +307,8 @@ function registerSocketHandlers(io) {
       if (!preLobby) return;
       const wasInGame = preLobby.gameStarted;
       const lobby = lobbyService.removePlayer(socket.lobbyId, socket.id);
-
-      if (!lobby) {
-        clearNeofragIntervals(preLobby);
-        return;
-      }
-
-      io.to(socket.lobbyId).emit('playerLeft', {
-        playerId: socket.id,
-        lobby: lobbyService.sanitizeLobby(lobby),
-      });
-
+      if (!lobby) { clearNeofragIntervals(preLobby); return; }
+      io.to(socket.lobbyId).emit('playerLeft', { playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
       if (wasInGame) emitGameOver(socket.lobbyId, lobby);
     });
   });

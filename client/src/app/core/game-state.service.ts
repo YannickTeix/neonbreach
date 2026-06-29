@@ -5,6 +5,7 @@ import {
   BlurchangeEndPayload, BlurchangeStartPayload,
   Breacher, BreachPreparingPayload, BreachReadyPayload, BreachConnectedPayload, BreachCancelledPayload,
   ResearchModule, ResearchPreparingPayload, ResearchReadyPayload, ResearchUpdatedPayload, ResearchCancelledPayload,
+  UpgradePreparingPayload, UpgradeAppliedPayload,
   GameEvent, GameOverInfo, Lobby, LogEntry, Player,
 } from './models';
 
@@ -36,6 +37,7 @@ export class GameStateService {
   readonly myNeofrags = signal<number>(0);
   readonly myBreachers = signal<Breacher[]>([]);
   readonly myResearchModule = signal<ResearchModule | null>(null);
+  readonly pendingUpgrades = signal<Map<string, number>>(new Map());
 
   readonly isHost = computed(() => {
     const l = this.lobby();
@@ -85,6 +87,7 @@ export class GameStateService {
       this.myNeofrags.set(0);
       this.myBreachers.set([]);
       this.myResearchModule.set(null);
+      this.pendingUpgrades.set(new Map());
       this.screen.set('game');
       this.addLog('Partie commencée ! Bonne chance.', 'log-system');
     });
@@ -208,7 +211,34 @@ export class GameStateService {
 
     this.socket.on<ResearchCancelledPayload>('researchCancelled').subscribe(({ reason }) => {
       this.myResearchModule.set(null);
+      this.pendingUpgrades.set(new Map());
       this.addLog(`Module de recherche annulé — ${escapeHtml(reason)}`, 'log-system');
+    });
+
+    this.socket.on<UpgradePreparingPayload>('upgradePreparing').subscribe(({ serverName, duration }) => {
+      this.pendingUpgrades.update((map) => {
+        const next = new Map(map);
+        next.set(serverName, (next.get(serverName) ?? 0) + 1);
+        return next;
+      });
+      this.addLog(
+        `Upgrade integrity en cours sur <b>${escapeHtml(serverName)}</b>… (${duration / 1000}s)`,
+        'log-research'
+      );
+    });
+
+    this.socket.on<UpgradeAppliedPayload>('upgradeApplied').subscribe(({ serverName, newIntegrityMax }) => {
+      this.pendingUpgrades.update((map) => {
+        const next = new Map(map);
+        const count = next.get(serverName) ?? 0;
+        if (count <= 1) next.delete(serverName);
+        else next.set(serverName, count - 1);
+        return next;
+      });
+      this.addLog(
+        `Integrity max de <b>${escapeHtml(serverName)}</b> augmentée → ${newIntegrityMax}`,
+        'log-research'
+      );
     });
 
     this.socket.on<CommandErrorPayload>('commandError').subscribe(({ message }) => {

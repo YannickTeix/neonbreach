@@ -2,6 +2,10 @@ const ATTACK_COOLDOWN_MS = 3000;
 const ATTACK_MAX_NEOFRAGS = 30;
 const DEFEND_HEAL = 15;
 const DEFEND_COOLDOWN_MS = 5000;
+const UPGRADE_INTEGRITY_COST = 30;
+const UPGRADE_INTEGRITY_AMOUNT = 20;
+const UPGRADE_INTEGRITY_DURATION_MS = 8000;
+const UPGRADE_INTEGRITY_MAX_COUNT = 3;
 
 function checkWinCondition(lobby) {
   const alive = lobby.players.filter((p) => p.servers && p.servers.some((s) => s.currentIntegrity > 0));
@@ -121,12 +125,58 @@ function handleDefend(player, targetName) {
   };
 }
 
+function handleUpgradeIntegrity(player, serverName) {
+  if (!player.researchModule || player.researchModule.state !== 'active') {
+    return { error: 'Module de recherche actif requis pour utiliser upgrade.' };
+  }
+  if (player.neofrags < UPGRADE_INTEGRITY_COST) {
+    return { error: `Neofrags insuffisants — ${player.neofrags}/${UPGRADE_INTEGRITY_COST} requis.` };
+  }
+  const server = player.servers.find((s) => s.name === serverName && s.currentIntegrity > 0);
+  if (!server) {
+    const alive = player.servers.filter((s) => s.currentIntegrity > 0).map((s) => s.name);
+    return { error: `Serveur "${serverName}" introuvable. Disponibles: ${alive.join(', ') || 'aucun'}` };
+  }
+  const totalBoosts = (server.integrityUpgrades || 0) + (server.integrityPending || 0);
+  if (totalBoosts >= UPGRADE_INTEGRITY_MAX_COUNT) {
+    return { error: `Limite atteinte — ${UPGRADE_INTEGRITY_MAX_COUNT} upgrades max par serveur.` };
+  }
+
+  player.neofrags -= UPGRADE_INTEGRITY_COST;
+  server.integrityPending = (server.integrityPending || 0) + 1;
+
+  return { serverName, neofrags: player.neofrags, duration: UPGRADE_INTEGRITY_DURATION_MS };
+}
+
+function applyIntegrityUpgrade(server) {
+  server.integrityMax += UPGRADE_INTEGRITY_AMOUNT;
+  server.integrityUpgrades = (server.integrityUpgrades || 0) + 1;
+  server.integrityPending = Math.max(0, (server.integrityPending || 0) - 1);
+}
+
+function resetIntegrityUpgrades(player) {
+  for (const server of player.servers) {
+    if ((server.integrityUpgrades || 0) > 0 || (server.integrityPending || 0) > 0) {
+      if (server.currentIntegrity > 100) server.currentIntegrity = 100;
+      server.integrityMax = 100;
+      server.integrityUpgrades = 0;
+      server.integrityPending = 0;
+    }
+  }
+}
+
 module.exports = {
   checkWinCondition,
   handleAttack,
   handleDefend,
+  handleUpgradeIntegrity,
+  applyIntegrityUpgrade,
+  resetIntegrityUpgrades,
   ATTACK_COOLDOWN_MS,
   ATTACK_MAX_NEOFRAGS,
   DEFEND_HEAL,
   DEFEND_COOLDOWN_MS,
+  UPGRADE_INTEGRITY_COST,
+  UPGRADE_INTEGRITY_DURATION_MS,
+  UPGRADE_INTEGRITY_MAX_COUNT,
 };

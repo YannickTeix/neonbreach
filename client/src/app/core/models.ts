@@ -2,6 +2,7 @@ export interface ServerInfo {
   name: string;
   currentIntegrity: number;
   integrityMax: number;
+  integrityUpgrades: number;
   neofragGain: number;
   neofragFreq: number;
   processingCores: number;
@@ -129,4 +130,14 @@ export interface ResearchUpdatedPayload {
 
 export interface ResearchCancelledPayload {
   reason: string;
+}
+
+export interface UpgradePreparingPayload {
+  serverName: string;
+  duration: number;
+}
+
+export interface UpgradeAppliedPayload {
+  serverName: string;
+  newIntegrityMax: number;
 }

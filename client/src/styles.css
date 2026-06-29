@@ -556,12 +556,39 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   position: relative; z-index: 3;
 }
 .server-integrity-row {
-  display: flex; justify-content: space-between; align-items: center;
+  display: flex; justify-content: space-between; align-items: center; gap: 4px;
 }
 .server-integrity-text {
   font-size: 8px;
   color: rgba(0, 255, 136, 0.45);
   letter-spacing: 0.5px;
+  flex: 1;
+}
+.integrity-boosts {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+.integrity-boost {
+  width: 3px;
+  height: 11px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.integrity-boost.applied {
+  background: #00ff88;
+  border-color: #00ff88;
+  box-shadow: 0 0 4px rgba(0, 255, 136, 0.7);
+}
+.integrity-boost.pending {
+  background: rgba(0, 255, 136, 0.25);
+  border-color: rgba(0, 255, 136, 0.5);
+  animation: boostPending 0.9s ease-in-out infinite;
+}
+@keyframes boostPending {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.9; }
 }
 .server-integrity-bar-bg {
   height: 8px;
@@ -955,8 +982,28 @@ input[type="text"]::placeholder { color: var(--text-dim); }
 }
 
 /* ── Command help breach ── */
-.cmd-kw-breach  { color: #ff8800; font-weight: bold; }
-.cmd-val-breach { color: #ff8800; font-weight: bold; }
+.cmd-kw-breach    { color: #ff8800; font-weight: bold; }
+.cmd-val-breach   { color: #ff8800; font-weight: bold; }
+
+/* ── Command help research / upgrade ── */
+.cmd-kw-research  { color: #00aaff; font-weight: bold; }
+.cmd-val-research { color: #00aaff; font-weight: bold; }
+.cmd-kw-upgrade   { color: #00ff88; font-weight: bold; }
+.cmd-val-upgrade  { color: #00ff88; font-weight: bold; }
+
+/* ── Séparateur dans l'aide ── */
+.cmd-help-separator {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  margin: 6px 0;
+}
+.cmd-help-section-label {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+  padding: 2px 0 4px;
+}
 
 /* Floating damage / heal popup */
 .float-popup {
@@ -1171,11 +1218,15 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   border-radius: 10px;
   padding: 24px 28px 20px;
   width: min(420px, 90vw);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 0 40px rgba(0,212,255,0.15), 0 0 80px rgba(0,0,0,0.6);
 }
 .cmd-help-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 .cmd-help-title {
   font-size: 11px; letter-spacing: 3px; color: var(--cyan); font-weight: bold;
@@ -1187,6 +1238,19 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   transition: color 0.15s, background 0.15s;
 }
 .cmd-help-close:hover { color: var(--text-bright); background: rgba(255,255,255,0.06); }
+
+.cmd-help-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,0.3) transparent;
+}
+.cmd-help-scroll::-webkit-scrollbar { width: 4px; }
+.cmd-help-scroll::-webkit-scrollbar-track { background: transparent; }
+.cmd-help-scroll::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 2px; }
+.cmd-help-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,212,255,0.6); }
 
 .cmd-help-list {
   list-style: none;

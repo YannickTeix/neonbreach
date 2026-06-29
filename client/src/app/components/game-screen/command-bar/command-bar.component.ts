@@ -6,7 +6,7 @@ import { GameStateService } from '../../../core/game-state.service';
 interface Suggestion {
   name: string;
   label: string;
-  type: 'attack' | 'defend' | 'blurchange' | 'research';
+  type: 'attack' | 'defend' | 'blurchange' | 'research' | 'upgrade';
 }
 
 interface CooldownView {
@@ -205,6 +205,25 @@ export class CommandBarComponent implements OnDestroy {
             .forEach((n) => pool.push({ name: String(n), label: `${Math.min(n, needed)} vers lvl ${mod.level + 1}`, type: 'research' }));
         }
       }
+    } else if (cmd === 'upgrade') {
+      const subCmd = parts[1]?.toLowerCase();
+      const mod = this.state.myResearchModule();
+      const me = this.state.myPlayer();
+      if (!subCmd || subCmd !== 'integrity') {
+        // Phase 1 : choisir le serveur
+        const q = (parts[1] ?? '').toUpperCase();
+        const pending = this.state.pendingUpgrades();
+        if (mod?.state === 'active' && me) {
+          for (const s of me.servers) {
+            const totalBoosts = s.integrityUpgrades + (pending.get(s.name) ?? 0);
+            if (s.currentIntegrity > 0 && totalBoosts < 3 && s.name.startsWith(q)) {
+              pool.push({ name: s.name, label: `integrityMax ${s.integrityMax} · ${3 - totalBoosts} slot(s)`, type: 'upgrade' });
+            }
+          }
+        }
+      } else if (subCmd === 'integrity') {
+        // Phase 2 : sous-commande déjà saisie, rien à suggérer
+      }
     }
 
     this.suggestions.set(parts.length < 2 ? [] : pool);
@@ -242,6 +261,8 @@ export class CommandBarComponent implements OnDestroy {
       } else if (subCmd === 'upload') {
         this.commandText = `research upload ${s.name}`;
       }
+    } else if (cmd === 'upgrade') {
+      this.commandText = `upgrade ${s.name} integrity`;
     } else {
       this.commandText = `${cmd} ${s.name}`;
     }

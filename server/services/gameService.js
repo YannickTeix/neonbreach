@@ -1,4 +1,4 @@
-const { checkWinCondition, handleAttack, handleDefend, ATTACK_COOLDOWN_MS, ATTACK_MAX_NEOFRAGS, DEFEND_HEAL, DEFEND_COOLDOWN_MS } = require('./serverService');
+const { checkWinCondition, handleAttack, handleDefend, handleUpgradeIntegrity, applyIntegrityUpgrade, resetIntegrityUpgrades, ATTACK_COOLDOWN_MS, ATTACK_MAX_NEOFRAGS, DEFEND_HEAL, DEFEND_COOLDOWN_MS, UPGRADE_INTEGRITY_DURATION_MS, UPGRADE_INTEGRITY_MAX_COUNT } = require('./serverService');
 const { generateBreacherName, handleBreachPrepare, handleBreachConnect, BREACH_PREPARE_COST, BREACH_CONNECT_COST, BREACH_PREPARE_DURATION_MS } = require('./breachService');
 const { handleResearchPrepare, handleResearchUpload, RESEARCH_PREPARE_DURATION_MS } = require('./researchService');
 
@@ -59,6 +59,11 @@ module.exports = {
   generateBreacherName,
   handleResearchPrepare,
   handleResearchUpload,
+  handleUpgradeIntegrity,
+  applyIntegrityUpgrade,
+  resetIntegrityUpgrades,
   BREACH_PREPARE_DURATION_MS,
   RESEARCH_PREPARE_DURATION_MS,
+  UPGRADE_INTEGRITY_DURATION_MS,
+  UPGRADE_INTEGRITY_MAX_COUNT,
 };

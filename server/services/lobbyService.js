@@ -71,7 +71,15 @@ class LobbyService {
     return {
       id: player.id,
       name: player.name,
-      servers: player.servers,
+      servers: player.servers.map((s) => ({
+        name: s.name,
+        currentIntegrity: s.currentIntegrity,
+        integrityMax: s.integrityMax,
+        integrityUpgrades: s.integrityUpgrades || 0,
+        neofragGain: s.neofragGain,
+        neofragFreq: s.neofragFreq,
+        processingCores: s.processingCores,
+      })),
     };
   }
 
@@ -109,6 +117,8 @@ class LobbyService {
         name,
         currentIntegrity: 100,
         integrityMax: 100,
+        integrityUpgrades: 0,
+        integrityPending: 0,
         neofragGain: 1,
         neofragFreq: 3000,
         processingCores: 1,

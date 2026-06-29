@@ -25,6 +25,13 @@
       </div>
       <div class="server-integrity-row">
         <span class="server-integrity-text" *ngIf="!isDead()">{{ server.currentIntegrity }}/{{ server.integrityMax }}</span>
+        <div class="integrity-boosts" *ngIf="!isDead()">
+          <div class="integrity-boost"
+               *ngFor="let i of boostSlots"
+               [class.applied]="i < server.integrityUpgrades"
+               [class.pending]="i >= server.integrityUpgrades && i < server.integrityUpgrades + pendingBoosts()">
+          </div>
+        </div>
       </div>
     </div>
     <div class="server-neofrag-rate" *ngIf="!isDead()">
@@ -44,7 +51,7 @@
 
     <div class="server-research-indicator" *ngIf="!isDead() && researchOnServer() as r">
       <span class="research-state-preparing" *ngIf="r.state === 'preparing'">⏳ research</span>
-      <span class="research-state-active" *ngIf="r.state === 'active'">◉ research mod</span>
+      <span class="research-state-active" *ngIf="r.state === 'active'">◉ research</span>
     </div>
 
     <div class="server-breach-indicator" *ngIf="!isDead() && breacherOnServer() as b">

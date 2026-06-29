@@ -25,6 +25,8 @@ export class ServerCardComponent implements OnChanges, OnDestroy {
     const m = this.state.myResearchModule();
     return (m && m.sourceServer === this.server.name) ? m : null;
   });
+  readonly pendingBoosts = computed(() => this.state.pendingUpgrades().get(this.server.name) ?? 0);
+  readonly boostSlots = [0, 1, 2];
 
   private prevBlurred = false;
   private popupTimeout?: ReturnType<typeof setTimeout>;
