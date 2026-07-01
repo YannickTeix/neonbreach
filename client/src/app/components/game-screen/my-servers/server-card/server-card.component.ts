@@ -58,7 +58,7 @@ export class ServerCardComponent implements OnChanges, OnDestroy {
   }
 
   integrityClass(): string {
-    return this.isDead() ? 'dead' : integrityClass(this.server.currentIntegrity);
+    return this.isDead() ? 'dead' : integrityClass(this.server.currentIntegrity / this.server.integrityMax * 100);
   }
 
   integrityColor(): string {

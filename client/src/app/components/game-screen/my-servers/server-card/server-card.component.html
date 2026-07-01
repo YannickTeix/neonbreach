@@ -21,7 +21,7 @@
     <div class="server-name-tag" [class.glitching]="isBlurred()">{{ server.name }}</div>
     <div class="server-integrity-wrap">
       <div class="server-integrity-bar-bg">
-        <div class="server-integrity-bar" [style.width.%]="server.currentIntegrity"></div>
+        <div class="server-integrity-bar" [style.width.%]="server.currentIntegrity / server.integrityMax * 100"></div>
       </div>
       <div class="server-integrity-row">
         <span class="server-integrity-text" *ngIf="!isDead()">{{ server.currentIntegrity }}/{{ server.integrityMax }}</span>

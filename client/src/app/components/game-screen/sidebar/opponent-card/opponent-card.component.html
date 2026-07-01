@@ -7,7 +7,7 @@
   <div class="mini-server" [class.dead]="s.currentIntegrity <= 0" *ngFor="let s of player.servers">
     <div class="mini-server-name" [class.glitching]="isBlurred(s.name)" [title]="isBlurred(s.name) ? '???' : s.name">{{ s.name }}</div>
     <div class="mini-integrity-bg">
-      <div class="mini-integrity-fill" [style.width.%]="s.currentIntegrity"></div>
+      <div class="mini-integrity-fill" [style.width.%]="s.currentIntegrity / s.integrityMax * 100"></div>
     </div>
   </div>
 </div>

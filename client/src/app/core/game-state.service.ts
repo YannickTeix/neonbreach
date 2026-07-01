@@ -305,7 +305,7 @@ export class GameStateService {
       const target = ev.targetPlayerId === this.myPlayerId() ? 'votre' : 'le';
       const coresInfo = ev.coresMultiplier > 1 ? ` ×${ev.coresMultiplier} cores` : '';
       this.addLog(
-        `${who} ${target} serveur <b>${escapeHtml(ev.targetServerName)}</b> (${escapeHtml(ev.targetPlayerName)}) — ${ev.neofragsConsumed}⬡${coresInfo} = -${ev.damage}% → ${ev.newCurrentIntegrity}%`,
+        `${who} ${target} serveur <b>${escapeHtml(ev.targetServerName)}</b> (${escapeHtml(ev.targetPlayerName)}) — ${ev.neofragsConsumed}⬡${coresInfo} = -${ev.damage} → ${ev.newCurrentIntegrity}/${ev.integrityMax}`,
         'log-attack'
       );
       if (ev.newCurrentIntegrity <= 0) {
@@ -313,7 +313,7 @@ export class GameStateService {
       }
     } else {
       const who = ev.playerId === this.myPlayerId() ? 'Vous avez défendu' : `${escapeHtml(ev.playerName)} défend`;
-      this.addLog(`${who} <b>${escapeHtml(ev.targetServerName)}</b> — +15% → ${ev.newCurrentIntegrity}%`, 'log-defend');
+      this.addLog(`${who} <b>${escapeHtml(ev.targetServerName)}</b> — +${ev.heal} → ${ev.newCurrentIntegrity}/${ev.integrityMax}`, 'log-defend');
     }
   }
 }

@@ -1,6 +1,6 @@
 const ATTACK_COOLDOWN_MS = 3000;
 const ATTACK_MAX_NEOFRAGS = 30;
-const DEFEND_HEAL = 15;
+const DEFEND_HEAL_RATIO = 0.15;
 const DEFEND_COOLDOWN_MS = 5000;
 const UPGRADE_INTEGRITY_COST = 30;
 const UPGRADE_INTEGRITY_AMOUNT = 20;
@@ -82,6 +82,7 @@ function handleAttack(lobby, attacker, targetName) {
       targetServerName: targetServer.name,
       damage,
       newCurrentIntegrity: targetServer.currentIntegrity,
+      integrityMax: targetServer.integrityMax,
       neofragsConsumed: neofragAmount,
       coresMultiplier,
     },
@@ -109,7 +110,8 @@ function handleDefend(player, targetName) {
     return { error: `"${targetName}" est détruit, impossible de le défendre.` };
   }
 
-  targetServer.currentIntegrity = Math.min(100, targetServer.currentIntegrity + DEFEND_HEAL);
+  const heal = Math.max(1, Math.round(targetServer.integrityMax * DEFEND_HEAL_RATIO));
+  targetServer.currentIntegrity = Math.min(targetServer.integrityMax, targetServer.currentIntegrity + heal);
   player.cooldowns.defend = now + DEFEND_COOLDOWN_MS;
 
   return {
@@ -118,8 +120,9 @@ function handleDefend(player, targetName) {
       playerId: player.id,
       playerName: player.name,
       targetServerName: targetServer.name,
-      heal: DEFEND_HEAL,
+      heal,
       newCurrentIntegrity: targetServer.currentIntegrity,
+      integrityMax: targetServer.integrityMax,
     },
     cooldownDuration: DEFEND_COOLDOWN_MS,
   };
@@ -174,7 +177,6 @@ module.exports = {
   resetIntegrityUpgrades,
   ATTACK_COOLDOWN_MS,
   ATTACK_MAX_NEOFRAGS,
-  DEFEND_HEAL,
   DEFEND_COOLDOWN_MS,
   UPGRADE_INTEGRITY_COST,
   UPGRADE_INTEGRITY_DURATION_MS,
