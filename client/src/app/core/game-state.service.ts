@@ -6,13 +6,14 @@ import {
   Breacher, BreachPreparingPayload, BreachReadyPayload, BreachConnectedPayload, BreachCancelledPayload,
   ResearchModule, ResearchPreparingPayload, ResearchReadyPayload, ResearchUpdatedPayload, ResearchCancelledPayload,
   UpgradePreparingPayload, UpgradeAppliedPayload,
+  RejoinSuccessPayload, RejoinFailedPayload, GameStoppedPayload,
   GameEvent, GameOverInfo, Lobby, LogEntry, Player,
 } from './models';
 
 export type Screen = 'home' | 'lobby' | 'game';
 
-interface LobbyCreatedPayload { lobbyId: string; playerId: string; lobby: Lobby; }
-interface LobbyJoinedPayload { playerId: string; lobby: Lobby; }
+interface LobbyCreatedPayload { lobbyId: string; playerId: string; sessionToken: string; lobby: Lobby; }
+interface LobbyJoinedPayload { playerId: string; sessionToken: string; lobby: Lobby; }
 interface LobbyPayload { lobby: Lobby; }
 interface PlayerLeftPayload { playerId: string; lobby: Lobby; }
 interface GameOverPayload { winner: Player | null; draw: boolean; }
@@ -58,17 +59,61 @@ export class GameStateService {
   private homeErrorTimeout?: ReturnType<typeof setTimeout>;
   private feedbackTimeout?: ReturnType<typeof setTimeout>;
 
+  private static readonly SESSION_KEY = 'neonbreach_session';
+
   constructor(private socket: SocketService) {
-    this.socket.on<LobbyCreatedPayload>('lobbyCreated').subscribe(({ playerId, lobby }) => {
+    // Tentative de reconnexion automatique au démarrage
+    const savedSession = localStorage.getItem(GameStateService.SESSION_KEY);
+    if (savedSession) {
+      try {
+        const { sessionToken, lobbyId } = JSON.parse(savedSession);
+        this.socket.emit('rejoin', { sessionToken, lobbyId });
+      } catch {
+        localStorage.removeItem(GameStateService.SESSION_KEY);
+      }
+    }
+
+    this.socket.on<RejoinSuccessPayload>('rejoinSuccess').subscribe(({ playerId, lobby, neofrags, breachers, researchModule }) => {
       this.myPlayerId.set(playerId);
       this.lobby.set(lobby);
-      this.screen.set('lobby');
+      this.myNeofrags.set(neofrags);
+      this.myBreachers.set(breachers ?? []);
+      this.myResearchModule.set(researchModule ?? null);
+      this.pendingUpgrades.set(new Map());
+      this.screen.set(lobby.gameStarted ? 'game' : 'lobby');
+      this.addLog('Reconnexion à la partie réussie.', 'log-system');
     });
 
-    this.socket.on<LobbyJoinedPayload>('lobbyJoined').subscribe(({ playerId, lobby }) => {
+    this.socket.on<RejoinFailedPayload>('rejoinFailed').subscribe(() => {
+      localStorage.removeItem(GameStateService.SESSION_KEY);
+    });
+
+    this.socket.on<GameStoppedPayload>('gameStopped').subscribe(({ stoppedBy }) => {
+      localStorage.removeItem(GameStateService.SESSION_KEY);
+      this.lobby.set(null);
+      this.myPlayerId.set(null);
+      this.myNeofrags.set(0);
+      this.myBreachers.set([]);
+      this.myResearchModule.set(null);
+      this.pendingUpgrades.set(new Map());
+      this.gameOverInfo.set(null);
+      this.blurredServers.set(new Set());
+      this.screen.set('home');
+      this.setHomeError(`Partie arrêtée par ${stoppedBy}.`);
+    });
+
+    this.socket.on<LobbyCreatedPayload>('lobbyCreated').subscribe(({ playerId, sessionToken, lobby }) => {
       this.myPlayerId.set(playerId);
       this.lobby.set(lobby);
       this.screen.set('lobby');
+      localStorage.setItem(GameStateService.SESSION_KEY, JSON.stringify({ sessionToken, lobbyId: lobby.id }));
+    });
+
+    this.socket.on<LobbyJoinedPayload>('lobbyJoined').subscribe(({ playerId, sessionToken, lobby }) => {
+      this.myPlayerId.set(playerId);
+      this.lobby.set(lobby);
+      this.screen.set('lobby');
+      localStorage.setItem(GameStateService.SESSION_KEY, JSON.stringify({ sessionToken, lobbyId: lobby.id }));
     });
 
     this.socket.on<LobbyPayload>('playerJoined').subscribe(({ lobby }) => {
@@ -103,6 +148,7 @@ export class GameStateService {
     });
 
     this.socket.on<GameOverPayload>('gameOver').subscribe(({ winner, draw }) => {
+      localStorage.removeItem(GameStateService.SESSION_KEY);
       this.gameOverInfo.set({ winner, draw });
       if (draw) {
         this.addLog('Égalité. Tous les serveurs sont tombés simultanément.', 'log-system');
@@ -281,6 +327,10 @@ export class GameStateService {
   sendCommand(command: string): void {
     this.socket.emit('command', { command });
     this.commandFeedback.set('');
+  }
+
+  stopGame(): void {
+    this.socket.emit('stopGame');
   }
 
   setHomeError(message: string): void {

@@ -50,12 +50,37 @@ function registerSocketHandlers(io) {
   }
 
   io.on('connection', (socket) => {
+
+    // ── REJOIN ────────────────────────────────────────────────────────────
+    socket.on('rejoin', ({ sessionToken, lobbyId }) => {
+      const lobby = lobbyService.getLobby(lobbyId);
+      if (!lobby) { socket.emit('rejoinFailed', { reason: 'Partie introuvable.' }); return; }
+
+      const player = lobbyService.getPlayerByToken(lobby, sessionToken);
+      if (!player) { socket.emit('rejoinFailed', { reason: 'Session introuvable.' }); return; }
+
+      // Mettre à jour le socket id du joueur
+      player.id = socket.id;
+      socket.lobbyId = lobbyId;
+      socket.join(lobbyId);
+
+      socket.emit('rejoinSuccess', {
+        playerId: socket.id,
+        lobby: lobbyService.sanitizeLobby(lobby),
+        neofrags: player.neofrags,
+        breachers: player.breachers || [],
+        researchModule: player.researchModule || null,
+      });
+    });
+
+    // ── CREATE / JOIN ─────────────────────────────────────────────────────
     socket.on('createLobby', ({ playerName }) => {
       if (!playerName || !playerName.trim()) return;
       const lobby = lobbyService.createLobby(socket.id, playerName);
+      const player = lobby.players[0];
       socket.join(lobby.id);
       socket.lobbyId = lobby.id;
-      socket.emit('lobbyCreated', { lobbyId: lobby.id, playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
+      socket.emit('lobbyCreated', { lobbyId: lobby.id, playerId: socket.id, sessionToken: player.sessionToken, lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
     socket.on('joinLobby', ({ lobbyId, playerName }) => {
@@ -64,10 +89,11 @@ function registerSocketHandlers(io) {
       if (error) { socket.emit('error', { message: error }); return; }
       socket.join(lobbyId);
       socket.lobbyId = lobbyId;
-      socket.emit('lobbyJoined', { playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
+      socket.emit('lobbyJoined', { playerId: socket.id, sessionToken: player.sessionToken, lobby: lobbyService.sanitizeLobby(lobby) });
       socket.to(lobbyId).emit('playerJoined', { player: lobbyService.sanitizePlayer(player), lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
+    // ── START GAME ────────────────────────────────────────────────────────
     socket.on('startGame', () => {
       const lobby = lobbyService.getLobby(socket.lobbyId);
       if (!lobby || lobby.host !== socket.id) return;
@@ -90,6 +116,20 @@ function registerSocketHandlers(io) {
       io.to(socket.lobbyId).emit('gameStarted', { lobby: lobbyService.sanitizeLobby(lobby) });
     });
 
+    // ── STOP GAME ─────────────────────────────────────────────────────────
+    socket.on('stopGame', () => {
+      const lobby = lobbyService.getLobby(socket.lobbyId);
+      if (!lobby || !lobby.gameStarted) return;
+      const player = lobbyService.getPlayer(lobby, socket.id);
+
+      clearNeofragIntervals(lobby);
+      lobby.gameStarted = false;
+
+      io.to(socket.lobbyId).emit('gameStopped', { stoppedBy: player?.name ?? '???' });
+      lobbyService.deleteLobby(socket.lobbyId);
+    });
+
+    // ── COMMAND ───────────────────────────────────────────────────────────
     socket.on('command', ({ command }) => {
       const lobby = lobbyService.getLobby(socket.lobbyId);
       if (!lobby || !lobby.gameStarted) return;
@@ -99,7 +139,7 @@ function registerSocketHandlers(io) {
 
       const { cmd, targetName } = parseCommand(command);
 
-      // ── BREACH ──────────────────────────────────────────────────────────
+      // ── BREACH ────────────────────────────────────────────────────────
       if (cmd === 'breach') {
         const bParts = targetName.split(/\s+/);
         const subCmd = bParts[0]?.toLowerCase();
@@ -127,13 +167,13 @@ function registerSocketHandlers(io) {
             const sourceServer = currentPlayer.servers.find((s) => s.name === breacher.sourceServer);
             if (!sourceServer || sourceServer.currentIntegrity <= 0) {
               currentPlayer.breachers = currentPlayer.breachers.filter((b) => b.id !== breachId);
-              socket.emit('breachCancelled', { breachId, reason: 'Serveur source détruit.' });
+              io.to(currentPlayer.id).emit('breachCancelled', { breachId, reason: 'Serveur source détruit.' });
               return;
             }
             const name = generateBreacherName(currentLobby);
             breacher.name = name;
             breacher.state = 'ready';
-            socket.emit('breachReady', { breachId, sourceServer: breacher.sourceServer, breacherName: name });
+            io.to(currentPlayer.id).emit('breachReady', { breachId, sourceServer: breacher.sourceServer, breacherName: name });
           }, BREACH_PREPARE_DURATION_MS);
           return;
         }
@@ -160,7 +200,7 @@ function registerSocketHandlers(io) {
         return;
       }
 
-      // ── RESEARCH ─────────────────────────────────────────────────────────
+      // ── RESEARCH ──────────────────────────────────────────────────────
       if (cmd === 'research') {
         const rParts = targetName.split(/\s+/);
         const subCmd = rParts[0]?.toLowerCase();
@@ -187,11 +227,11 @@ function registerSocketHandlers(io) {
             const srv = currentPlayer.servers.find((s) => s.name === sourceServer);
             if (!srv || srv.currentIntegrity <= 0) {
               currentPlayer.researchModule = null;
-              socket.emit('researchCancelled', { reason: 'Serveur source détruit.' });
+              io.to(currentPlayer.id).emit('researchCancelled', { reason: 'Serveur source détruit.' });
               return;
             }
             currentPlayer.researchModule.state = 'active';
-            socket.emit('researchReady', { sourceServer });
+            io.to(currentPlayer.id).emit('researchReady', { sourceServer });
           }, RESEARCH_PREPARE_DURATION_MS);
           return;
         }
@@ -210,7 +250,7 @@ function registerSocketHandlers(io) {
         return;
       }
 
-      // ── UPGRADE ──────────────────────────────────────────────────────────
+      // ── UPGRADE ───────────────────────────────────────────────────────
       if (cmd === 'upgrade') {
         const uParts = targetName.split(/\s+/);
         const serverName = uParts[0];
@@ -238,20 +278,19 @@ function registerSocketHandlers(io) {
           const srv = currentPlayer.servers.find((s) => s.name === upgServerName);
           if (!srv) return;
 
-          // Decrement pending even if conditions aren't met
           srv.integrityPending = Math.max(0, (srv.integrityPending || 0) - 1);
 
           if (!currentPlayer.researchModule || currentPlayer.researchModule.state !== 'active') return;
           if (srv.currentIntegrity <= 0) return;
 
           applyIntegrityUpgrade(srv);
-          socket.emit('upgradeApplied', { serverName: upgServerName, newIntegrityMax: srv.integrityMax });
+          io.to(currentPlayer.id).emit('upgradeApplied', { serverName: upgServerName, newIntegrityMax: srv.integrityMax });
           io.to(lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(currentLobby) });
         }, UPGRADE_INTEGRITY_DURATION_MS);
         return;
       }
 
-      // ── COMMANDES AVEC CIBLE SIMPLE ───────────────────────────────────────
+      // ── COMMANDES AVEC CIBLE SIMPLE ───────────────────────────────────
       if (!targetName) {
         socket.emit('commandError', { message: `Usage: ${cmd} <nom_du_serveur>` });
         return;
@@ -294,7 +333,7 @@ function registerSocketHandlers(io) {
         }
       }
 
-      // gameState après toutes les mutations (inclut les resets d'integrity éventuels)
+      // gameState après toutes les mutations
       io.to(socket.lobbyId).emit('gameEvent', result.event);
       io.to(socket.lobbyId).emit('gameState', { lobby: lobbyService.sanitizeLobby(lobby) });
       socket.emit('cooldownStart', { type: cmd, duration: result.cooldownDuration });
@@ -302,14 +341,20 @@ function registerSocketHandlers(io) {
       if (cmd === 'attack') emitGameOver(socket.lobbyId, lobby);
     });
 
+    // ── DISCONNECT ────────────────────────────────────────────────────────
     socket.on('disconnect', () => {
-      const preLobby = lobbyService.getLobby(socket.lobbyId);
-      if (!preLobby) return;
-      const wasInGame = preLobby.gameStarted;
-      const lobby = lobbyService.removePlayer(socket.lobbyId, socket.id);
-      if (!lobby) { clearNeofragIntervals(preLobby); return; }
-      io.to(socket.lobbyId).emit('playerLeft', { playerId: socket.id, lobby: lobbyService.sanitizeLobby(lobby) });
-      if (wasInGame) emitGameOver(socket.lobbyId, lobby);
+      const lobby = lobbyService.getLobby(socket.lobbyId);
+      if (!lobby) return;
+
+      if (lobby.gameStarted) {
+        // Partie en cours : garder le joueur pour permettre la reconnexion
+        return;
+      }
+
+      // Pré-partie : retirer le joueur normalement
+      const updatedLobby = lobbyService.removePlayer(socket.lobbyId, socket.id);
+      if (!updatedLobby) { clearNeofragIntervals(lobby); return; }
+      io.to(socket.lobbyId).emit('playerLeft', { playerId: socket.id, lobby: lobbyService.sanitizeLobby(updatedLobby) });
     });
   });
 }

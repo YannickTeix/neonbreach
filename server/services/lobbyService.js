@@ -2,6 +2,10 @@ const CODENAMES = require('../config/codenames');
 
 const MAX_PLAYERS = 4;
 
+function generateSessionToken() {
+  return Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+}
+
 class LobbyService {
   constructor() {
     this.lobbies = {};
@@ -49,6 +53,9 @@ class LobbyService {
     const lobby = this.lobbies[lobbyId];
     if (!lobby) return null;
 
+    // En cours de partie : ne pas retirer — le joueur peut se reconnecter
+    if (lobby.gameStarted) return lobby;
+
     lobby.players = lobby.players.filter((p) => p.id !== socketId);
 
     if (lobby.players.length === 0) {
@@ -63,8 +70,16 @@ class LobbyService {
     return lobby;
   }
 
+  deleteLobby(lobbyId) {
+    delete this.lobbies[lobbyId];
+  }
+
   getPlayer(lobby, socketId) {
     return lobby.players.find((p) => p.id === socketId);
+  }
+
+  getPlayerByToken(lobby, sessionToken) {
+    return lobby.players.find((p) => p.sessionToken === sessionToken);
   }
 
   sanitizePlayer(player) {
@@ -95,6 +110,7 @@ class LobbyService {
   _createPlayer(socketId, playerName) {
     return {
       id: socketId,
+      sessionToken: generateSessionToken(),
       name: playerName.trim().slice(0, 20),
       servers: [],
       cooldowns: { attack: 0, defend: 0 },

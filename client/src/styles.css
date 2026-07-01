@@ -327,6 +327,23 @@ input[type="text"]::placeholder { color: var(--text-dim); }
   0%,100% { box-shadow: 0 0 6px rgba(0,255,136,0.4); }
   50% { box-shadow: 0 0 14px rgba(0,255,136,0.8); }
 }
+.game-stop-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px;
+  background: transparent;
+  border: 1px solid rgba(255, 34, 85, 0.4);
+  border-radius: 6px;
+  color: rgba(255, 34, 85, 0.6);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.game-stop-btn svg { width: 14px; height: 14px; }
+.game-stop-btn:hover {
+  border-color: var(--red);
+  color: var(--red);
+  background: rgba(255, 34, 85, 0.1);
+  box-shadow: 0 0 8px rgba(255, 34, 85, 0.3);
+}
 
 /* ── Neofrag counter ── */
 .neofrag-counter {

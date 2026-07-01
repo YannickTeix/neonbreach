@@ -16,7 +16,7 @@ import { SidebarComponent } from './sidebar/sidebar.component';
 export class GameScreenComponent {
   readonly state = inject(GameStateService);
 
-  readonly statusLabel = computed(() => (this.state.gameOverInfo() ? 'FIN' : 'EN JEU'));
+  readonly gameOver = computed(() => this.state.gameOverInfo());
 
   readonly statusColor = computed(() => {
     const info = this.state.gameOverInfo();
@@ -24,4 +24,8 @@ export class GameScreenComponent {
     if (info.draw) return 'var(--orange)';
     return info.winner?.id === this.state.myPlayerId() ? 'var(--neon)' : 'var(--red)';
   });
+
+  stopGame(): void {
+    this.state.stopGame();
+  }
 }

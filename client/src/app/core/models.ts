@@ -134,6 +134,22 @@ export interface ResearchCancelledPayload {
   reason: string;
 }
 
+export interface RejoinSuccessPayload {
+  playerId: string;
+  lobby: Lobby;
+  neofrags: number;
+  breachers: Breacher[];
+  researchModule: ResearchModule | null;
+}
+
+export interface RejoinFailedPayload {
+  reason: string;
+}
+
+export interface GameStoppedPayload {
+  stoppedBy: string;
+}
+
 export interface UpgradePreparingPayload {
   serverName: string;
   duration: number;
